@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  phoneNumber     String   @unique @map("phone_number")
+  inviteCode      String?  @map("invite_code")
+  userInviteCode  String?  @map("user_invite_code")
+  userSequence    Int?     @map("user_sequence")
+  role            String   @default("user")
+  createdAt       DateTime @default(now()) @map("created_at")
+  orders          Order[]
+  preferences     UserPreferences?
+}
+
+model InviteCode {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  inviteType   String   @default("system") @map("invite_type")
+  maxUses      Int      @default(2) @map("max_uses")
+  currentUses  Int      @default(0) @map("current_uses")
+  ownerUserId  String?  @map("owner_user_id")
+  usedBy       String?  @map("used_by")
+  usedAt       DateTime? @map("used_at")
+  createdBy    String?  @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+}
+
+model Invitation {
+  id             String   @id @default(uuid())
+  inviterUserId  String   @map("inviter_user_id")
+  inviteeUserId  String?  @map("invitee_user_id")
+  inviteCode     String   @map("invite_code")
+  inviteePhone   String   @map("invitee_phone")
+  invitedAt      DateTime @default(now()) @map("invited_at")
+}
+
+model Order {
+  id                  String   @id @default(uuid())
+  orderNumber         String   @unique @map("order_number")
+  userId              String   @map("user_id")
+  phoneNumber         String   @map("phone_number")
+  status              String   @default("draft")
+  orderDate           DateTime @map("order_date")
+  createdAt           DateTime @default(now()) @map("created_at")
+  submittedAt         DateTime? @map("submitted_at")
+  deliveryAddress     String   @map("delivery_address")
+  dietaryRestrictions String?  @map("dietary_restrictions")
+  foodPreferences     String?  @map("food_preferences")
+  budgetAmount        Float    @map("budget_amount")
+  budgetCurrency      String   @default("CNY") @map("budget_currency")
+  metadata            Json?
+  userSequenceNumber  Int?     @map("user_sequence_number")
+  isDeleted           Boolean  @default(false) @map("is_deleted")
+  updatedAt           DateTime? @map("updated_at")
+
+  // payment fields
+  paymentStatus String? @map("payment_status")
+  paidAt        DateTime? @map("paid_at")
+  paymentId     String?  @map("payment_id")
+
+  user User @relation(fields: [userId], references: [id])
+  feedbacks OrderFeedback[]
+}
+
+model UserPreferences {
+  id                    String   @id @default(uuid())
+  userId                String   @unique @map("user_id")
+  defaultAddress        String   @default("") @map("default_address")
+  defaultFoodType       String   @default("[]") @map("default_food_type")
+  defaultAllergies      String   @default("[]") @map("default_allergies")
+  defaultPreferences    String   @default("[]") @map("default_preferences")
+  defaultBudget         String   @default("") @map("default_budget")
+  otherAllergyText      String   @default("") @map("other_allergy_text")
+  otherPreferenceText   String   @default("") @map("other_preference_text")
+  addressSuggestion     String   @default("") @map("address_suggestion")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Payment {
+  id             String   @id @default(uuid())
+  orderId        String   @map("order_id")
+  provider       String
+  status         String   @default("created")
+  amount         Float
+  currency       String   @default("CNY")
+  subject        String? 
+  body           String? 
+  outTradeNo     String   @unique @map("out_trade_no")
+  transactionId  String?  @map("transaction_id")
+  qrCode         String?  @map("qr_code")
+  idempotencyKey String?  @unique @map("idempotency_key")
+  metadata       Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+  paidAt         DateTime? @map("paid_at")
+  refundedAt     DateTime? @map("refunded_at")
+}
+
+model PaymentEvent {
+  id         String   @id @default(uuid())
+  paymentId  String   @map("payment_id")
+  eventType  String   @map("event_type")
+  payload    Json
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+model OrderFeedback {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  userId    String   @map("user_id")
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model Reservation {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  partySize      Int      @map("party_size")
+  startTime      DateTime @map("start_time")
+  endTime        DateTime @map("end_time")
+  status         String   @default("pending")
+  notes          String?
+  linkedOrderId  String?  @map("linked_order_id")
+  depositPaymentId String? @map("deposit_payment_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+}
+
+

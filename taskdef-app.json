@@ -1,0 +1,17 @@
+{
+  "family": "omnilaze-app",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "public.ecr.aws/docker/library/nginx:latest",
+      "essential": true,
+      "portMappings": [{ "containerPort": 3000 }]
+    }
+  ]
+}

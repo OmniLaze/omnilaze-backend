@@ -1,0 +1,32 @@
+{
+  "family": "omnilaze-app",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:ce54ad4b4f2b64406423389e01c5959789c2fb41",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 3000, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "DATABASE_URL", "value": "postgresql://dummy:dummy@dummy:5432/dummy" },
+        { "name": "JWT_SECRET", "value": "dummy-secret-for-testing" },
+        { "name": "CORS_ORIGINS", "value": "*" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/omnilaze-backend",
+          "awslogs-region": "ap-southeast-1",
+          "awslogs-stream-prefix": "backend"
+        }
+      }
+    }
+  ]
+}

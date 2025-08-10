@@ -8,7 +8,7 @@
   "containerDefinitions": [
     {
       "name": "app",
-      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:e3f1655e5dbf6973b4d1142ab6f97c294c9c6cd2",
+      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:f30f85b80a094814051cdfa972385501df008333",
       "essential": true,
       "portMappings": [
         { "containerPort": 3000, "protocol": "tcp" }

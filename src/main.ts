@@ -7,7 +7,10 @@ import { json, urlencoded } from 'express';
 import rateLimit from 'express-rate-limit';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: false });
+  const app = await NestFactory.create(AppModule, { 
+    cors: false,
+    logger: ['log', 'error', 'warn', 'debug', 'verbose']
+  });
 
   // CORS
   const originsRaw = process.env.CORS_ORIGINS || '[]';
@@ -26,6 +29,12 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
+  });
+
+  // Request logging middleware
+  app.use((req: any, res: any, next: any) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - IP: ${req.ip || req.connection.remoteAddress}`);
+    next();
   });
 
   // Global pipes
@@ -54,7 +63,9 @@ async function bootstrap() {
   const port = Number(process.env.PORT || 3000);
   await app.listen(port, '0.0.0.0');
   // eslint-disable-next-line no-console
-  console.log(`API listening on http://localhost:${port}`);
+  console.log(`API listening on http://0.0.0.0:${port}`);
+  // eslint-disable-next-line no-console
+  console.log(`CORS origins configured: ${originsRaw}`);
 }
 
 bootstrap();

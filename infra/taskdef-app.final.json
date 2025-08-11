@@ -52,11 +52,11 @@
         },
         {
           "name": "ALIPAY_PRIVATE_KEY",
-          "valueFrom": "arn:aws:secretsmanager:ap-southeast-1:442729101249:secret:omnilaze/ALIPAY_PRIVATE_KEY-xxxxx"
+          "valueFrom": "arn:aws:secretsmanager:ap-southeast-1:442729101249:secret:omnilaze/ALIPAY_PRIVATE_KEY-JYwGxw"
         },
         {
           "name": "ALIPAY_PUBLIC_KEY",
-          "valueFrom": "arn:aws:secretsmanager:ap-southeast-1:442729101249:secret:omnilaze/ALIPAY_PUBLIC_KEY-yyyyy"
+          "valueFrom": "arn:aws:secretsmanager:ap-southeast-1:442729101249:secret:omnilaze/ALIPAY_PUBLIC_KEY-YenNJf"
         },
         {
           "name": "ALIPAY_GATEWAY",

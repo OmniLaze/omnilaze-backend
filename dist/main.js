@@ -11,7 +11,10 @@ const swagger_1 = require("@nestjs/swagger");
 const express_1 = require("express");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 async function bootstrap() {
-    const app = await core_1.NestFactory.create(app_module_1.AppModule, { cors: false });
+    const app = await core_1.NestFactory.create(app_module_1.AppModule, {
+        cors: false,
+        logger: ['log', 'error', 'warn', 'debug', 'verbose']
+    });
     // CORS
     const originsRaw = process.env.CORS_ORIGINS || '[]';
     let origins = [];
@@ -32,6 +35,11 @@ async function bootstrap() {
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
+    });
+    // Request logging middleware
+    app.use((req, res, next) => {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - IP: ${req.ip || req.connection.remoteAddress}`);
+        next();
     });
     // Global pipes
     app.useGlobalPipes(new common_1.ValidationPipe({ whitelist: true, transform: true }));
@@ -55,7 +63,9 @@ async function bootstrap() {
     const port = Number(process.env.PORT || 3000);
     await app.listen(port, '0.0.0.0');
     // eslint-disable-next-line no-console
-    console.log(`API listening on http://localhost:${port}`);
+    console.log(`API listening on http://0.0.0.0:${port}`);
+    // eslint-disable-next-line no-console
+    console.log(`CORS origins configured: ${originsRaw}`);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

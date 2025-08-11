@@ -22,8 +22,8 @@ export class AppController {
         <h1 class="header">🍃 OmniLaze Backend API</h1>
         <p class="status">✅ Server is running successfully!</p>
         <h2>Available Endpoints:</h2>
-        <a href="/docs" class="link">📚 API Documentation (Swagger)</a>
-        <a href="/v1/health" class="link">💓 Health Check</a>
+        <a href="https://backend.omnilaze.co/docs" class="link">📚 API Documentation (Swagger)</a>
+        <a href="https://backend.omnilaze.co/v1/health" class="link">💓 Health Check</a>
         <div>
           <h2>Environment Info:</h2>
           <ul>
@@ -44,11 +44,11 @@ export class AppController {
       message: 'API is working!',
       timestamp: new Date().toISOString(),
       endpoints: {
-        docs: '/docs',
-        health: '/v1/health',
-        auth: '/v1/auth/*',
-        orders: '/v1/orders/*',
-        payments: '/v1/payments/*'
+        docs: 'https://backend.omnilaze.co/docs',
+        health: 'https://backend.omnilaze.co/v1/health',
+        auth: 'https://backend.omnilaze.co/v1/auth/*',
+        orders: 'https://backend.omnilaze.co/v1/orders/*',
+        payments: 'https://backend.omnilaze.co/v1/payments/*'
       }
     };
   }

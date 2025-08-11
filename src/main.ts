@@ -55,6 +55,9 @@ async function bootstrap() {
     .setTitle('OmniLaze Backend API')
     .setDescription('REST API for OmniLaze with PostgreSQL and WebSocket')
     .setVersion('1.0')
+    .addServer('https://backend.omnilaze.co', 'Production HTTPS')
+    .addServer('http://backend.omnilaze.co', 'Production HTTP')
+    .addServer('http://localhost:3000', 'Local Development')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);

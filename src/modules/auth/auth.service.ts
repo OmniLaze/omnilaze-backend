@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../db/prisma.service';
 import OpenApi, { Config as OpenApiConfig } from '@alicloud/openapi-client';
 import Dypnsapi, { GetPhoneWithTokenRequest } from '@alicloud/dypnsapi20170525';
-import Util from '@alicloud/tea-util';
+import Util, { RuntimeOptions } from '@alicloud/tea-util';
 
 @Injectable()
 export class AuthService {
@@ -105,7 +105,7 @@ export class AuthService {
       const client = new Dypnsapi(config as any);
 
       const request = new GetPhoneWithTokenRequest({ spToken });
-      const runtime = new Util.RuntimeOptions({ timeouted: 'retry', readTimeout: 5000, connectTimeout: 5000 });
+      const runtime = new RuntimeOptions({});
       const resp = await client.getPhoneWithTokenWithOptions(request, runtime);
 
       const code = resp?.body?.code;

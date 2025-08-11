@@ -15,7 +15,9 @@
         { "containerPort": 3000, "protocol": "tcp" }
       ],
       "environment": [
-        { "name": "NODE_ENV", "value": "production" }
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "ALIYUN_REGION_ID", "value": "cn-hangzhou" },
+        { "name": "ALIYUN_DYPN_ENDPOINT", "value": "dypnsapi.aliyuncs.com" }
       ],
       "secrets": [
         { "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/omnilaze/DATABASE_URL" },
@@ -25,7 +27,9 @@
         { "name": "ALIPAY_PRIVATE_KEY", "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:omnilaze/ALIPAY_PRIVATE_KEY-xxxxx" },
         { "name": "ALIPAY_PUBLIC_KEY", "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:omnilaze/ALIPAY_PUBLIC_KEY-yyyyy" },
         { "name": "ALIPAY_GATEWAY", "valueFrom": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/omnilaze/ALIPAY_GATEWAY" },
-        { "name": "ALIPAY_NOTIFY_URL", "valueFrom": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/omnilaze/ALIPAY_NOTIFY_URL" }
+        { "name": "ALIPAY_NOTIFY_URL", "valueFrom": "arn:aws:ssm:<REGION>:<ACCOUNT_ID>:parameter/omnilaze/ALIPAY_NOTIFY_URL" },
+        { "name": "ALIYUN_ACCESS_KEY_ID", "valueFrom": "arn:aws:ssm:ap-southeast-1:<ACCOUNT_ID>:parameter/omnilaze/ALIYUN_ACCESS_KEY_ID" },
+        { "name": "ALIYUN_ACCESS_KEY_SECRET", "valueFrom": "arn:aws:ssm:ap-southeast-1:<ACCOUNT_ID>:parameter/omnilaze/ALIYUN_ACCESS_KEY_SECRET" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",

@@ -71,10 +71,16 @@ npm run start
 npm run start:prod
 ```
 
-### Testing
+### Testing and Quality Assurance
 ```bash
 # No test framework currently configured
 npm run lint  # Currently just echoes "No linter configured"
+
+# Type checking with TypeScript
+npx tsc --noEmit
+
+# Database operations testing
+npm run prisma:studio  # Visual database browser for data verification
 ```
 
 ## Deployment Architecture
@@ -100,17 +106,30 @@ npm run lint  # Currently just echoes "No linter configured"
 
 ## Environment Configuration
 
-### Required Environment Variables
+### Production Configuration
 ```bash
-# Database
-DATABASE_URL="postgresql://user:password@host:5432/omnilaze"
+# Current production endpoints
+FRONTEND_URL="https://backend.omnilaze.co"
+SWAGGER_DOCS="https://backend.omnilaze.co/docs"
+HEALTH_CHECK="https://backend.omnilaze.co/v1/health"
 
-# CORS Configuration  
-CORS_ORIGINS='["http://localhost:3000", "https://yourdomain.com"]'
-
-# Application
+# Local development
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/omnilaze"
+CORS_ORIGINS='["http://localhost:8081", "http://localhost:3000"]'
 PORT=3000
-NODE_ENV=production
+NODE_ENV=development
+```
+
+### Docker Development
+```bash
+# Start PostgreSQL and Redis
+docker-compose up -d
+
+# Run database migrations
+npm run prisma:migrate
+
+# Start development server
+npm run dev
 ```
 
 ### AWS Secrets (GitHub Actions)
@@ -145,24 +164,76 @@ NODE_ENV=production
 - **Swagger Documentation**: Automatic API documentation generation
 - **Type Safety**: Full TypeScript with Prisma type generation
 
-## Development Patterns
+## Development Patterns & Best Practices
 
-### Module Structure
+### NestJS Module Architecture
 Each feature follows consistent NestJS patterns:
-- `*.module.ts` - Module definition with imports/exports
-- `*.controller.ts` - REST API endpoints with validation
-- `*.service.ts` - Business logic and database operations
-- `*.gateway.ts` - WebSocket event handlers (where applicable)
+- `*.module.ts` - Module definition with imports/exports and dependency injection
+- `*.controller.ts` - REST API endpoints with OpenAPI decorators and validation
+- `*.service.ts` - Business logic and database operations using Prisma
+- `*.gateway.ts` - WebSocket event handlers using Socket.IO (where applicable)
+- DTOs and validation using `class-validator` and `class-transformer`
 
-### Database Patterns
-- **Prisma Integration**: Type-safe database queries with generated client
-- **Migration Management**: Versioned schema changes via Prisma migrate
-- **Binary Targets**: Multi-platform support for Docker deployment (`linux-musl`, `debian-openssl-3.0.x`)
+### Database Patterns with Prisma
+- **Type-safe Queries**: Generated Prisma client with full TypeScript support
+- **Migration Management**: Versioned schema changes via `prisma migrate`
+- **Multi-platform Support**: Binary targets for Docker deployment (`linux-musl`, `debian-openssl-3.0.x`)
+- **Connection Management**: Prisma handles connection pooling automatically
+- **Relationships**: Proper foreign key relationships with cascade options
+
+### Authentication & Security
+- **JWT Guards**: Custom `JwtAuthGuard` for endpoint protection
+- **Role-based Access**: `@Roles()` decorator with `RolesGuard` for authorization
+- **Input Validation**: Global validation pipe with whitelist and transformation
+- **Rate Limiting**: 120 requests per minute per IP address
+- **CORS Configuration**: Environment-based origin allowlist
 
 ### Error Handling & Logging
-- **Global Validation**: Automatic DTO validation with whitelist transformation
-- **Request Logging**: Comprehensive request logging with IP tracking
-- **Rate Limiting**: Express rate limit middleware for DDoS protection
+- **Global Validation**: Automatic DTO validation with meaningful error messages
+- **Request Logging**: IP-based request tracking with timestamps
+- **Exception Handling**: NestJS built-in exception filters with proper HTTP status codes
+- **Health Checks**: Comprehensive health endpoint for monitoring
+
+### WebSocket Integration
+- **Real-time Updates**: OrdersGateway provides live order status updates
+- **Socket.IO**: Bi-directional communication for order tracking
+- **Room-based Updates**: Users receive updates only for their orders
+
+## Critical Implementation Notes
+
+### Docker Multi-stage Build
+The Dockerfile uses multi-stage build for production optimization:
+- Build stage: Node.js for TypeScript compilation and Prisma generation
+- Runtime stage: Minimal Node.js Alpine image for production
+- Binary targets ensure compatibility with Linux containers
+
+### AWS ECS Integration
+- **Task Definition**: Auto-generated with image URIs from ECR
+- **Service Updates**: Blue-green deployments with zero downtime
+- **Health Checks**: ALB monitors `/v1/health` endpoint
+- **Migration Tasks**: Separate ECS task for running database migrations
+
+### Environment Detection
+The application adapts behavior based on `NODE_ENV`:
+- Development: Verbose logging, CORS development origins
+- Production: Optimized logging, restricted CORS, health monitoring
+
+## Common Issues & Solutions
+
+### Database Connection Issues
+- Ensure PostgreSQL is running: `docker-compose up -d`
+- Check DATABASE_URL format: `postgresql://user:pass@host:port/db`
+- Run migrations: `npm run prisma:migrate`
+
+### CORS Issues
+- Update CORS_ORIGINS environment variable with frontend URLs
+- Include both HTTP and HTTPS versions for development
+- Verify JSON array format: `'["http://localhost:3000"]'`
+
+### WebSocket Connection Problems
+- Check that Socket.IO client connects to correct backend URL
+- Verify CORS settings allow WebSocket upgrades
+- Monitor browser network tab for connection attempts
 
 ## Infrastructure Requirements
 

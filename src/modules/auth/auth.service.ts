@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../db/prisma.service';
+import OpenApi, { Config as OpenApiConfig } from '@alicloud/openapi-client';
+import Dypnsapi, { GetPhoneWithTokenRequest } from '@alicloud/dypnsapi20170525';
+import Util from '@alicloud/tea-util';
 
 @Injectable()
 export class AuthService {
@@ -75,6 +78,68 @@ export class AuthService {
         user_invite_code: user.userInviteCode || undefined,
       },
     };
+  }
+
+  // 通过阿里云 Dypnsapi 的 SpToken 换取手机号并登录/注册
+  async loginWithAliyunSpToken(spToken: string) {
+    if (!spToken) return { success: false, message: 'sp_token 不能为空' };
+
+    const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
+    const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
+    const endpoint = process.env.ALIYUN_DYPN_ENDPOINT || 'dypnsapi.aliyuncs.com';
+    const regionId = process.env.ALIYUN_REGION_ID || 'cn-hangzhou';
+    const scheme = 'https';
+
+    if (!accessKeyId || !accessKeySecret) {
+      return { success: false, message: '阿里云访问密钥未配置' };
+    }
+
+    try {
+      const config = new OpenApiConfig({
+        accessKeyId,
+        accessKeySecret,
+        endpoint,
+        regionId,
+        protocol: scheme,
+      } as any);
+      const client = new Dypnsapi(config as any);
+
+      const request = new GetPhoneWithTokenRequest({ spToken });
+      const runtime = new Util.RuntimeOptions({ timeouted: 'retry', readTimeout: 5000, connectTimeout: 5000 });
+      const resp = await client.getPhoneWithTokenWithOptions(request, runtime);
+
+      const code = resp?.body?.code;
+      if (code !== 'OK') {
+        const msg = resp?.body?.message || '阿里云取号失败';
+        return { success: false, message: `阿里云取号失败: ${msg}` };
+      }
+
+      const phoneNumber = resp?.body?.getPhoneWithTokenResultDTO?.phoneNumber || resp?.body?.phoneNumber;
+      if (!phoneNumber) return { success: false, message: '未获取到手机号' };
+
+      // 业务：若用户存在则登录；否则走新用户流程，返回需要邀请码
+      const existing = await this.prisma.user.findUnique({ where: { phoneNumber } });
+      if (!existing) {
+        return {
+          success: true,
+          message: '新用户验证成功，请输入邀请码',
+          data: { user_id: null, phone_number: phoneNumber, is_new_user: true },
+        };
+      }
+
+      return {
+        success: true,
+        message: '验证成功',
+        data: {
+          user_id: existing.id,
+          phone_number: existing.phoneNumber,
+          is_new_user: false,
+          user_sequence: existing.userSequence || undefined,
+        },
+      };
+    } catch (err: any) {
+      return { success: false, message: `阿里云取号异常: ${err?.message || err}` };
+    }
   }
 }
 

@@ -16,6 +16,7 @@ const auth_module_1 = require("./modules/auth/auth.module");
 const preferences_module_1 = require("./modules/preferences/preferences.module");
 const invites_module_1 = require("./modules/invites/invites.module");
 const payments_module_1 = require("./modules/payments/payments.module");
+const app_controller_1 = require("./app.controller");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -31,6 +32,7 @@ exports.AppModule = AppModule = __decorate([
             invites_module_1.InvitesModule,
             payments_module_1.PaymentsModule,
         ],
+        controllers: [app_controller_1.AppController],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

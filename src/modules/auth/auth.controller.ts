@@ -24,6 +24,14 @@ export class AuthController {
     return { success: true, code: 'OK', message: res.message, data };
   }
 
+  // 阿里云获取授权Token（一键登录第一步）
+  @Post('/get-aliyun-auth-token')
+  async getAliyunAuthToken() {
+    const res = await this.authService.getAliyunAuthToken();
+    if (!res.success) return { success: false, code: 'ERROR', message: res.message };
+    return { success: true, code: 'OK', message: res.message, data: res.data };
+  }
+
   // 阿里云 Dypnsapi - 通过 SpToken 获取手机号并登录/注册
   @Post('/login-with-aliyun-sp-token')
   async loginWithAliyun(@Body() body: { sp_token: string }) {

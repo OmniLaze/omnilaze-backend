@@ -20,6 +20,7 @@ export class OrdersService {
         status: 'draft',
         orderDate: new Date(),
         deliveryAddress: formData.address,
+        deliveryTime: formData.deliveryTime || null, // 添加用餐时间
         dietaryRestrictions: JSON.stringify(formData.allergies || []),
         foodPreferences: JSON.stringify(formData.preferences || []),
         budgetAmount: budget,

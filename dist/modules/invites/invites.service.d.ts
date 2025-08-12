@@ -52,4 +52,50 @@ export declare class InvitesService {
         free_drinks_remaining: null;
         message: string;
     }>;
+    getAllInviteCodes(): Promise<{
+        success: boolean;
+        data: {
+            code: string;
+            max_uses: number;
+            current_uses: number;
+            remaining_uses: number;
+            created_at: Date;
+            used_by: string | null;
+            used_at: Date | null;
+        }[];
+        message?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        data?: undefined;
+    }>;
+    updateInviteCodeMaxUses(code: string, maxUses: number): Promise<{
+        success: boolean;
+        message: string;
+        data?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        data: {
+            code: string;
+            max_uses: number;
+            current_uses: number;
+            remaining_uses: number;
+        };
+    }>;
+    createInviteCode(code: string, maxUses: number, description?: string): Promise<{
+        success: boolean;
+        message: string;
+        data?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        data: {
+            code: string;
+            max_uses: number;
+            current_uses: number;
+            remaining_uses: number;
+            created_at: Date;
+        };
+    }>;
 }

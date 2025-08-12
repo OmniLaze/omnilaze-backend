@@ -24,6 +24,22 @@ export class InvitesController {
   async remaining() {
     return this.invites.freeDrinksRemaining();
   }
+
+  // 管理员API端点
+  @Get('/admin/invite-codes')
+  async getAllInviteCodes() {
+    return this.invites.getAllInviteCodes();
+  }
+
+  @Post('/admin/update-invite-code')
+  async updateInviteCode(@Body() body: { code: string; max_uses: number }) {
+    return this.invites.updateInviteCodeMaxUses(body.code, body.max_uses);
+  }
+
+  @Post('/admin/create-invite-code')
+  async createInviteCode(@Body() body: { code: string; max_uses: number; description?: string }) {
+    return this.invites.createInviteCode(body.code, body.max_uses, body.description);
+  }
 }
 
 

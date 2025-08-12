@@ -31,6 +31,16 @@ let InvitesController = class InvitesController {
     async remaining() {
         return this.invites.freeDrinksRemaining();
     }
+    // 管理员API端点
+    async getAllInviteCodes() {
+        return this.invites.getAllInviteCodes();
+    }
+    async updateInviteCode(body) {
+        return this.invites.updateInviteCodeMaxUses(body.code, body.max_uses);
+    }
+    async createInviteCode(body) {
+        return this.invites.createInviteCode(body.code, body.max_uses, body.description);
+    }
 };
 exports.InvitesController = InvitesController;
 __decorate([
@@ -60,6 +70,26 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], InvitesController.prototype, "remaining", null);
+__decorate([
+    (0, common_1.Get)('/admin/invite-codes'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], InvitesController.prototype, "getAllInviteCodes", null);
+__decorate([
+    (0, common_1.Post)('/admin/update-invite-code'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], InvitesController.prototype, "updateInviteCode", null);
+__decorate([
+    (0, common_1.Post)('/admin/create-invite-code'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], InvitesController.prototype, "createInviteCode", null);
 exports.InvitesController = InvitesController = __decorate([
     (0, common_1.Controller)('/v1'),
     __metadata("design:paramtypes", [invites_service_1.InvitesService])

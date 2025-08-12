@@ -78,6 +78,95 @@ let InvitesService = class InvitesService {
         // Optional: Implement global quota logic with a config table
         return { success: true, free_drinks_remaining: null, message: '未配置全局免单名额' };
     }
+    // 管理员方法
+    async getAllInviteCodes() {
+        try {
+            const codes = await this.prisma.inviteCode.findMany({
+                orderBy: { createdAt: 'desc' }
+            });
+            return {
+                success: true,
+                data: codes.map(code => ({
+                    code: code.code,
+                    max_uses: code.maxUses,
+                    current_uses: code.currentUses,
+                    remaining_uses: code.maxUses - code.currentUses,
+                    created_at: code.createdAt,
+                    used_by: code.usedBy,
+                    used_at: code.usedAt
+                }))
+            };
+        }
+        catch (error) {
+            return { success: false, message: '获取邀请码失败' };
+        }
+    }
+    async updateInviteCodeMaxUses(code, maxUses) {
+        try {
+            if (!code || maxUses < 0) {
+                return { success: false, message: '参数无效' };
+            }
+            const existing = await this.prisma.inviteCode.findUnique({
+                where: { code }
+            });
+            if (!existing) {
+                return { success: false, message: '邀请码不存在' };
+            }
+            const updated = await this.prisma.inviteCode.update({
+                where: { code },
+                data: { maxUses }
+            });
+            return {
+                success: true,
+                message: '邀请码更新成功',
+                data: {
+                    code: updated.code,
+                    max_uses: updated.maxUses,
+                    current_uses: updated.currentUses,
+                    remaining_uses: updated.maxUses - updated.currentUses
+                }
+            };
+        }
+        catch (error) {
+            return { success: false, message: '更新邀请码失败' };
+        }
+    }
+    async createInviteCode(code, maxUses, description) {
+        try {
+            if (!code || maxUses < 0) {
+                return { success: false, message: '参数无效' };
+            }
+            // 检查邀请码是否已存在
+            const existing = await this.prisma.inviteCode.findUnique({
+                where: { code }
+            });
+            if (existing) {
+                return { success: false, message: '邀请码已存在' };
+            }
+            const newCode = await this.prisma.inviteCode.create({
+                data: {
+                    code,
+                    maxUses,
+                    currentUses: 0,
+                    createdBy: 'admin'
+                }
+            });
+            return {
+                success: true,
+                message: '邀请码创建成功',
+                data: {
+                    code: newCode.code,
+                    max_uses: newCode.maxUses,
+                    current_uses: newCode.currentUses,
+                    remaining_uses: newCode.maxUses,
+                    created_at: newCode.createdAt
+                }
+            };
+        }
+        catch (error) {
+            return { success: false, message: '创建邀请码失败' };
+        }
+    }
 };
 exports.InvitesService = InvitesService;
 exports.InvitesService = InvitesService = __decorate([

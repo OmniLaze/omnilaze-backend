@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ConfigService } from './config/config.service';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
@@ -13,22 +14,21 @@ async function bootstrap() {
   });
 
   // CORS
-  const originsRaw = process.env.CORS_ORIGINS || '[]';
-  let origins: string[] = [];
-  try {
-    origins = JSON.parse(originsRaw);
-  } catch {
-    origins = [];
-  }
+  const configService = app.get(ConfigService);
+  const origins: string[] = configService.corsOrigins;
+  const isDev = configService.nodeEnv !== 'production';
   app.enableCors({
     origin: (origin, cb) => {
+      if (isDev) return cb(null, true);
       if (!origin) return cb(null, true);
       if (origins.length === 0 || origins.includes('*') || origins.includes(origin)) return cb(null, true);
-      return cb(new Error('Not allowed by CORS'));
+      return cb(new Error(`Not allowed by CORS: ${origin}`));
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    // Allow common headers to reduce preflight failures
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
     credentials: true,
+    exposedHeaders: ['Authorization'],
   });
 
   // Request logging middleware
@@ -68,9 +68,7 @@ async function bootstrap() {
   // eslint-disable-next-line no-console
   console.log(`API listening on http://0.0.0.0:${port}`);
   // eslint-disable-next-line no-console
-  console.log(`CORS origins configured: ${originsRaw}`);
+  console.log(`CORS origins configured: ${JSON.stringify(origins)}`);
 }
 
 bootstrap();
-
-

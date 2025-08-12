@@ -44,12 +44,26 @@ class ConfigService {
         return Number(process.env.PORT || 3000);
     }
     get corsOrigins() {
-        try {
-            return JSON.parse(process.env.CORS_ORIGINS || '[]');
+        // If explicitly set, honor it
+        const raw = process.env.CORS_ORIGINS;
+        if (raw && raw.trim().length > 0) {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0)
+                    return parsed;
+            }
+            catch {
+                // fall through to defaults
+            }
         }
-        catch {
-            return [];
+        // Production-safe defaults if not provided
+        if (this.nodeEnv === 'production') {
+            return [
+                'https://omnilaze.co',
+                'https://www.omnilaze.co',
+            ];
         }
+        return [];
     }
     get databaseUrl() {
         const url = process.env.DATABASE_URL;

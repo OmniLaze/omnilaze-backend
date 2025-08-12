@@ -2,6 +2,10 @@ import { PrismaService } from '../../db/prisma.service';
 export declare class AuthService {
     private readonly prisma;
     constructor(prisma: PrismaService);
+    /**
+     * 创建阿里云Dypnsapi客户端
+     */
+    private createDypnsapiClient;
     sendVerificationCode(phoneNumber: string): Promise<{
         success: boolean;
         message: string;
@@ -10,15 +14,19 @@ export declare class AuthService {
         success: boolean;
         message: string;
         data: {
+            dev_code: string;
             sent: boolean;
-            dev_code?: undefined;
+            bizId?: undefined;
+            requestId?: undefined;
         };
     } | {
         success: boolean;
         message: string;
         data: {
-            dev_code: string;
             sent: boolean;
+            dev_code: string | undefined;
+            bizId: string | undefined;
+            requestId: any;
         };
     }>;
     loginWithPhone(phoneNumber: string, verificationCode: string): Promise<{

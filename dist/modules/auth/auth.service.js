@@ -52,58 +52,132 @@ let AuthService = class AuthService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    /**
+     * 创建阿里云Dypnsapi客户端
+     */
+    createDypnsapiClient() {
+        const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
+        const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
+        if (!accessKeyId || !accessKeySecret) {
+            throw new Error('阿里云访问密钥未配置');
+        }
+        // 使用传统方式初始化（兼容性更好）
+        const config = new openapi_client_1.Config({
+            accessKeyId,
+            accessKeySecret,
+            endpoint: process.env.ALIYUN_DYPN_ENDPOINT || 'dypnsapi.aliyuncs.com',
+            regionId: process.env.ALIYUN_REGION_ID || 'cn-hangzhou',
+        });
+        return new dypnsapi20170525_1.default(config);
+    }
     async sendVerificationCode(phoneNumber) {
         if (!phoneNumber || !/^\d{11}$/.test(phoneNumber)) {
             return { success: false, message: '请输入正确的11位手机号码' };
         }
-        // 生产环境发送真实短信
-        if (process.env.NODE_ENV === 'production' && process.env.SPUG_URL) {
-            try {
-                const code = Math.floor(100000 + Math.random() * 900000).toString();
-                // 发送短信到SPUG接口
-                const response = await fetch(process.env.SPUG_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phone: phoneNumber,
-                        code: code,
-                        message: `您的验证码是：${code}，5分钟内有效。请勿泄露给他人。`
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error(`SMS service returned ${response.status}`);
-                }
-                // 存储验证码到数据库或缓存（这里暂时简化）
-                return {
-                    success: true,
-                    message: '验证码发送成功',
-                    data: { sent: true }
-                };
-            }
-            catch (error) {
-                console.error('SMS sending failed:', error);
+        const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
+        const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
+        // 开发环境回退处理
+        if (!accessKeyId || !accessKeySecret) {
+            const code = '100000';
+            console.log(`[开发模式] 验证码: ${code} (手机号: ${phoneNumber})`);
+            return {
+                success: true,
+                message: '验证码发送成功（开发模式）',
+                data: { dev_code: code, sent: true },
+            };
+        }
+        try {
+            const client = this.createDypnsapiClient();
+            const runtime = new tea_util_1.RuntimeOptions({});
+            const request = new dypnsapi20170525_1.SendSmsVerifyCodeRequest({
+                phoneNumber,
+                countryCode: '86',
+                signName: process.env.ALIYUN_SMS_SIGN_NAME,
+                templateCode: process.env.ALIYUN_SMS_TEMPLATE_CODE,
+                templateParam: JSON.stringify({ code: '##code##' }),
+                validTime: 300,
+                interval: 60,
+                codeLength: 6,
+                codeType: 1,
+                duplicatePolicy: 1,
+                schemeName: process.env.ALIYUN_SMS_SCHEME_NAME || 'OmniLaze',
+                returnVerifyCode: process.env.NODE_ENV !== 'production',
+            });
+            console.log(`[Aliyun SMS] 发送验证码到: ${phoneNumber}`);
+            const response = await client.sendSmsVerifyCodeWithOptions(request, runtime);
+            console.log(`[Aliyun SMS] Response:`, JSON.stringify(response.body));
+            if (response.body?.code !== 'OK') {
+                console.error(`[Aliyun SMS] 发送失败: ${response.body?.code} - ${response.body?.message}`);
                 return {
                     success: false,
-                    message: '短信发送失败，请稍后重试'
+                    message: `短信发送失败: ${response.body?.message || response.body?.code}`
                 };
             }
+            const verifyCode = response.body?.model?.verifyCode;
+            if (verifyCode) {
+                console.log(`[Aliyun SMS] 开发模式验证码: ${verifyCode}`);
+            }
+            return {
+                success: true,
+                message: '验证码发送成功',
+                data: {
+                    sent: true,
+                    dev_code: verifyCode,
+                    bizId: response.body?.model?.bizId,
+                    requestId: response.body?.requestId
+                },
+            };
         }
-        // 开发环境返回固定验证码
-        const code = '100000';
-        return {
-            success: true,
-            message: '验证码发送成功（开发模式）',
-            data: { dev_code: code, sent: true }
-        };
+        catch (err) {
+            console.error('[Aliyun SMS] 发送异常:', err);
+            return {
+                success: false,
+                message: `短信发送异常: ${err?.message || err}`
+            };
+        }
     }
     async loginWithPhone(phoneNumber, verificationCode) {
         if (!/^\d{11}$/.test(phoneNumber))
             return { success: false, message: '请输入正确的11位手机号码' };
-        if (!/^\d{6}$/.test(verificationCode))
-            return { success: false, message: '请输入6位数字验证码' };
-        // dev code only
-        if (verificationCode !== '100000')
-            return { success: false, message: '验证码错误' };
+        if (!/^\d{4,8}$/.test(verificationCode))
+            return { success: false, message: '请输入有效的验证码' };
+        const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
+        const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
+        // 验证码校验
+        if (accessKeyId && accessKeySecret) {
+            try {
+                const client = this.createDypnsapiClient();
+                const runtime = new tea_util_1.RuntimeOptions({});
+                const request = new dypnsapi20170525_1.CheckSmsVerifyCodeRequest({
+                    phoneNumber,
+                    verifyCode: verificationCode,
+                    caseAuthPolicy: 1,
+                    schemeName: process.env.ALIYUN_SMS_SCHEME_NAME || 'OmniLaze',
+                });
+                console.log(`[Aliyun SMS] 验证验证码: ${phoneNumber} - ${verificationCode}`);
+                const response = await client.checkSmsVerifyCodeWithOptions(request, runtime);
+                console.log(`[Aliyun SMS] 验证响应:`, JSON.stringify(response.body));
+                const code = response?.body?.code;
+                const success = response?.body?.success;
+                if (code !== 'OK' || !success) {
+                    const message = response?.body?.message || '验证码校验失败';
+                    console.error(`[Aliyun SMS] 验证失败: ${code} - ${message}`);
+                    return { success: false, message };
+                }
+                console.log(`[Aliyun SMS] 验证码校验成功`);
+            }
+            catch (err) {
+                console.error('[Aliyun SMS] 验证异常:', err);
+                return { success: false, message: `验证码校验异常: ${err?.message || err}` };
+            }
+        }
+        else {
+            // 开发模式回退
+            console.log(`[开发模式] 验证验证码: ${verificationCode}`);
+            if (verificationCode !== '100000') {
+                return { success: false, message: '验证码错误' };
+            }
+        }
         // check user
         const user = await this.prisma.user.findUnique({ where: { phoneNumber } });
         if (!user) {

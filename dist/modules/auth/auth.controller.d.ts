@@ -1,7 +1,9 @@
 import { AuthService } from './auth.service';
+import { ConfigService } from '../../config/config.service';
 export declare class AuthController {
     private readonly authService;
-    constructor(authService: AuthService);
+    private readonly config;
+    constructor(authService: AuthService, config: ConfigService);
     sendCode(body: {
         phone_number: string;
     }): Promise<{
@@ -9,11 +11,15 @@ export declare class AuthController {
         code: string;
         message: string;
         data: {
-            sent: boolean;
-            dev_code?: undefined;
-        } | {
             dev_code: string;
             sent: boolean;
+            bizId?: undefined;
+            requestId?: undefined;
+        } | {
+            sent: boolean;
+            dev_code: string | undefined;
+            bizId: string | undefined;
+            requestId: any;
         } | undefined;
     }>;
     login(body: {

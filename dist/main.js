@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("reflect-metadata");
 const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
+const config_service_1 = require("./config/config.service");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const express_1 = require("express");
@@ -16,25 +17,24 @@ async function bootstrap() {
         logger: ['log', 'error', 'warn', 'debug', 'verbose']
     });
     // CORS
-    const originsRaw = process.env.CORS_ORIGINS || '[]';
-    let origins = [];
-    try {
-        origins = JSON.parse(originsRaw);
-    }
-    catch {
-        origins = [];
-    }
+    const configService = app.get(config_service_1.ConfigService);
+    const origins = configService.corsOrigins;
+    const isDev = configService.nodeEnv !== 'production';
     app.enableCors({
         origin: (origin, cb) => {
+            if (isDev)
+                return cb(null, true);
             if (!origin)
                 return cb(null, true);
             if (origins.length === 0 || origins.includes('*') || origins.includes(origin))
                 return cb(null, true);
-            return cb(new Error('Not allowed by CORS'));
+            return cb(new Error(`Not allowed by CORS: ${origin}`));
         },
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
+        // Allow common headers to reduce preflight failures
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
         credentials: true,
+        exposedHeaders: ['Authorization'],
     });
     // Request logging middleware
     app.use((req, res, next) => {
@@ -68,7 +68,7 @@ async function bootstrap() {
     // eslint-disable-next-line no-console
     console.log(`API listening on http://0.0.0.0:${port}`);
     // eslint-disable-next-line no-console
-    console.log(`CORS origins configured: ${originsRaw}`);
+    console.log(`CORS origins configured: ${JSON.stringify(origins)}`);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

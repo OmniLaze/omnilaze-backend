@@ -41,7 +41,7 @@ export class InvitesController {
     return this.invites.createInviteCode(body.code, body.max_uses, body.description);
   }
 
-  // 批量更新邀请码
+  // 批量更新邀请码 (一键更新到1000次使用)
   @Post('/admin/batch-update-invites')
   async batchUpdateInvites() {
     return this.invites.batchUpdateInvites();

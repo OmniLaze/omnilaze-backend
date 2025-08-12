@@ -1,22 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../db/prisma.service';
 import OpenApi, { Config as OpenApiConfig } from '@alicloud/openapi-client';
-import Dypnsapi, {
-  GetPhoneWithTokenRequest,
-  GetAuthTokenRequest,
-  SendSmsVerifyCodeRequest,
-  CheckSmsVerifyCodeRequest,
-} from '@alicloud/dypnsapi20170525';
-import Util, { RuntimeOptions } from '@alicloud/tea-util';
+import Dysmsapi, { SendSmsRequest } from '@alicloud/dysmsapi20170525';
+
+// 内存存储验证码（生产环境建议使用Redis）
+const smsCodeStore = new Map<string, { code: string; expires: number }>();
 
 @Injectable()
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * 创建阿里云Dypnsapi客户端
+   * 创建传统阿里云短信客户端
    */
-  private createDypnsapiClient(): Dypnsapi {
+  private createSmsClient(): Dysmsapi {
     const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
     const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
     
@@ -24,15 +21,14 @@ export class AuthService {
       throw new Error('阿里云访问密钥未配置');
     }
 
-    // 使用传统方式初始化（兼容性更好）
     const config = new OpenApiConfig({
       accessKeyId,
       accessKeySecret,
-      endpoint: process.env.ALIYUN_DYPN_ENDPOINT || 'dypnsapi.aliyuncs.com',
+      endpoint: 'dysmsapi.aliyuncs.com',
       regionId: process.env.ALIYUN_REGION_ID || 'cn-hangzhou',
     });
     
-    return new Dypnsapi(config);
+    return new Dysmsapi(config);
   }
 
   async sendVerificationCode(phoneNumber: string) {
@@ -55,26 +51,18 @@ export class AuthService {
     }
 
     try {
-      const client = this.createDypnsapiClient();
-      const runtime = new RuntimeOptions({});
+      const client = this.createSmsClient();
+      const code = Math.random().toString().slice(2, 8); // 生成6位验证码
       
-      const request = new SendSmsVerifyCodeRequest({
-        phoneNumber,
-        countryCode: '86',
+      const request = new SendSmsRequest({
+        phoneNumbers: phoneNumber,
         signName: process.env.ALIYUN_SMS_SIGN_NAME,
         templateCode: process.env.ALIYUN_SMS_TEMPLATE_CODE,
-        templateParam: JSON.stringify({ code: '##code##' }),
-        validTime: 300,
-        interval: 60,
-        codeLength: 6,
-        codeType: 1,
-        duplicatePolicy: 1,
-        schemeName: process.env.ALIYUN_SMS_SCHEME_NAME || 'OmniLaze',
-        returnVerifyCode: process.env.NODE_ENV !== 'production',
+        templateParam: JSON.stringify({ code: code }),
       });
 
       console.log(`[Aliyun SMS] 发送验证码到: ${phoneNumber}`);
-      const response = await client.sendSmsVerifyCodeWithOptions(request, runtime);
+      const response = await client.sendSms(request);
       
       console.log(`[Aliyun SMS] Response:`, JSON.stringify(response.body));
 
@@ -86,18 +74,23 @@ export class AuthService {
         };
       }
 
-      const verifyCode = response.body?.model?.verifyCode;
-      if (verifyCode) {
-        console.log(`[Aliyun SMS] 开发模式验证码: ${verifyCode}`);
-      }
+      // 存储验证码用于后续验证
+      smsCodeStore.set(phoneNumber, {
+        code: code,
+        expires: Date.now() + 5 * 60 * 1000, // 5分钟过期
+      });
+
+      // 5分钟后自动清理
+      setTimeout(() => {
+        smsCodeStore.delete(phoneNumber);
+      }, 5 * 60 * 1000);
 
       return {
         success: true,
         message: '验证码发送成功',
         data: { 
           sent: true, 
-          dev_code: verifyCode,
-          bizId: response.body?.model?.bizId,
+          bizId: response.body?.bizId,
           requestId: response.body?.requestId
         },
       };
@@ -120,31 +113,26 @@ export class AuthService {
     // 验证码校验
     if (accessKeyId && accessKeySecret) {
       try {
-        const client = this.createDypnsapiClient();
-        const runtime = new RuntimeOptions({});
+        // 从内存中获取验证码
+        const storedCode = smsCodeStore.get(phoneNumber);
         
-        const request = new CheckSmsVerifyCodeRequest({
-          phoneNumber,
-          verifyCode: verificationCode,
-          caseAuthPolicy: 1,
-          schemeName: process.env.ALIYUN_SMS_SCHEME_NAME || 'OmniLaze',
-        });
-        
-        console.log(`[Aliyun SMS] 验证验证码: ${phoneNumber} - ${verificationCode}`);
-        const response = await client.checkSmsVerifyCodeWithOptions(request, runtime);
-        
-        console.log(`[Aliyun SMS] 验证响应:`, JSON.stringify(response.body));
-
-        const code = response?.body?.code;
-        const success = response?.body?.success;
-        
-        if (code !== 'OK' || !success) {
-          const message = response?.body?.message || '验证码校验失败';
-          console.error(`[Aliyun SMS] 验证失败: ${code} - ${message}`);
-          return { success: false, message };
+        if (!storedCode) {
+          return { success: false, message: '验证码不存在或已过期' };
         }
         
-        console.log(`[Aliyun SMS] 验证码校验成功`);
+        if (Date.now() > storedCode.expires) {
+          smsCodeStore.delete(phoneNumber);
+          return { success: false, message: '验证码已过期' };
+        }
+        
+        if (storedCode.code !== verificationCode) {
+          return { success: false, message: '验证码错误' };
+        }
+        
+        // 验证成功，清理验证码
+        smsCodeStore.delete(phoneNumber);
+        console.log(`[Aliyun SMS] 验证码校验成功: ${phoneNumber}`);
+        
       } catch (err: any) {
         console.error('[Aliyun SMS] 验证异常:', err);
         return { success: false, message: `验证码校验异常: ${err?.message || err}` };
@@ -211,139 +199,4 @@ export class AuthService {
       },
     };
   }
-
-  // 获取阿里云授权Token（一键登录第一步）
-  async getAliyunAuthToken() {
-    const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
-    const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
-    const endpoint = process.env.ALIYUN_DYPN_ENDPOINT || 'dypnsapi.aliyuncs.com';
-    const regionId = process.env.ALIYUN_REGION_ID || 'cn-hangzhou';
-
-    if (!accessKeyId || !accessKeySecret) {
-      return { success: false, message: '阿里云访问密钥未配置' };
-    }
-
-    try {
-      const config = new OpenApiConfig({
-        accessKeyId,
-        accessKeySecret,
-        endpoint,
-        regionId,
-        protocol: 'https',
-      } as any);
-      const client = new Dypnsapi(config as any);
-      
-      const request = new GetAuthTokenRequest({
-        origin: process.env.ALIYUN_ORIGIN || 'https://backend.omnilaze.co', 
-        sceneCode: process.env.ALIYUN_SCENE_CODE || 'FC100000037867893', 
-        url: process.env.ALIYUN_CALLBACK_URL || 'https://backend.omnilaze.co/v1/aliyun-callback',
-      });
-      
-      const runtime = new RuntimeOptions({});
-      const response = await client.getAuthTokenWithOptions(request, runtime);
-      
-      if (response?.body?.code !== 'OK') {
-        const msg = response?.body?.message || '获取授权Token失败';
-        return { success: false, message: `阿里云授权失败: ${msg}` };
-      }
-
-      return {
-        success: true,
-        message: '获取授权Token成功',
-        data: {
-          authToken: response.body.tokenResult?.jwtToken,
-          requestId: response.body.requestId,
-        }
-      };
-    } catch (err: any) {
-      console.error('Aliyun GetAuthToken error:', err);
-      return { success: false, message: `阿里云授权异常: ${err?.message || err}` };
-    }
-  }
-
-  // 通过阿里云 Dypnsapi 的 SpToken 换取手机号并登录/注册（修复版本）
-  async loginWithAliyunSpToken(spToken: string) {
-    if (!spToken) return { success: false, message: 'sp_token 不能为空' };
-
-    const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
-    const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
-    const endpoint = process.env.ALIYUN_DYPN_ENDPOINT || 'dypnsapi.aliyuncs.com';
-    const regionId = process.env.ALIYUN_REGION_ID || 'cn-hangzhou';
-
-    if (!accessKeyId || !accessKeySecret) {
-      return { success: false, message: '阿里云访问密钥未配置' };
-    }
-
-    try {
-      const config = new OpenApiConfig({
-        accessKeyId,
-        accessKeySecret,
-        endpoint,
-        regionId,
-        protocol: 'https',
-      } as any);
-      const client = new Dypnsapi(config as any);
-
-      // 使用GetPhoneWithToken API
-      const request = new GetPhoneWithTokenRequest({ 
-        spToken: spToken 
-      });
-      const runtime = new RuntimeOptions({});
-      
-      console.log(`[Aliyun] Requesting phone with spToken: ${spToken.substring(0, 20)}...`);
-      const resp = await client.getPhoneWithTokenWithOptions(request, runtime);
-      
-      console.log(`[Aliyun] Response code: ${resp?.body?.code}, message: ${resp?.body?.message}`);
-
-      const code = resp?.body?.code;
-      if (code !== 'OK') {
-        const msg = resp?.body?.message || '阿里云取号失败';
-        console.error(`[Aliyun] Error response:`, resp?.body);
-        return { success: false, code: code || 'ERROR', message: `阿里云取号异常: ${code}: ${msg}` };
-      }
-
-      // 尝试多种可能的手机号字段
-      const phoneNumber = resp?.body?.phoneNumber || 
-                         resp?.body?.getPhoneWithTokenResultDTO?.phoneNumber ||
-                         resp?.body?.data?.phoneNumber ||
-                         resp?.body?.result?.phoneNumber;
-
-      console.log(`[Aliyun] Extracted phone number: ${phoneNumber}`);
-      
-      if (!phoneNumber) {
-        console.error(`[Aliyun] No phone number in response:`, JSON.stringify(resp?.body, null, 2));
-        return { success: false, message: '未能从响应中获取到手机号' };
-      }
-
-      // 验证手机号格式
-      if (!/^1[3-9]\d{9}$/.test(phoneNumber)) {
-        return { success: false, message: `获取到的手机号格式不正确: ${phoneNumber}` };
-      }
-
-      // 业务逻辑：检查用户是否存在
-      const existing = await this.prisma.user.findUnique({ where: { phoneNumber } });
-      if (!existing) {
-        return {
-          success: true,
-          message: '新用户验证成功，请输入邀请码',
-          data: { user_id: null, phone_number: phoneNumber, is_new_user: true },
-        };
-      }
-
-      return {
-        success: true,
-        message: '验证成功',
-        data: {
-          user_id: existing.id,
-          phone_number: existing.phoneNumber,
-          is_new_user: false,
-          user_sequence: existing.userSequence || undefined,
-        },
-      };
-    } catch (err: any) {
-      console.error('[Aliyun] Exception:', err);
-      return { success: false, message: `阿里云取号异常: ${err?.message || err}` };
-    }
-  }
 }
-

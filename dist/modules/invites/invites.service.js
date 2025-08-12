@@ -167,6 +167,75 @@ let InvitesService = class InvitesService {
             return { success: false, message: '创建邀请码失败' };
         }
     }
+    // 批量更新邀请码
+    async batchUpdateInvites() {
+        try {
+            console.log('🔄 开始批量更新邀请码...');
+            // 更新现有邀请码的最大使用次数
+            const updateResult = await this.prisma.inviteCode.updateMany({
+                where: {
+                    code: {
+                        in: ['1234', 'WELCOME', 'LANDE', 'OMNILAZE', 'ADVX2025']
+                    }
+                },
+                data: {
+                    maxUses: 1000
+                }
+            });
+            console.log(`✅ 已更新 ${updateResult.count} 个现有邀请码`);
+            // 创建或更新邀请码 'laze'
+            const existingLaze = await this.prisma.inviteCode.findUnique({
+                where: { code: 'laze' }
+            });
+            if (existingLaze) {
+                await this.prisma.inviteCode.update({
+                    where: { code: 'laze' },
+                    data: { maxUses: 1000 }
+                });
+                console.log('✅ 邀请码 "laze" 已更新');
+            }
+            else {
+                await this.prisma.inviteCode.create({
+                    data: {
+                        code: 'laze',
+                        inviteType: 'system',
+                        maxUses: 1000,
+                        currentUses: 0,
+                        createdBy: 'admin'
+                    }
+                });
+                console.log('✅ 新邀请码 "laze" 已创建');
+            }
+            // 获取更新后的状态
+            const finalCodes = await this.prisma.inviteCode.findMany({
+                orderBy: { createdAt: 'desc' }
+            });
+            const summary = {
+                total_codes: finalCodes.length,
+                updated_existing: updateResult.count,
+                total_available_uses: finalCodes.reduce((sum, code) => sum + (code.maxUses - code.currentUses), 0),
+                codes: finalCodes.map(code => ({
+                    code: code.code,
+                    max_uses: code.maxUses,
+                    current_uses: code.currentUses,
+                    remaining_uses: code.maxUses - code.currentUses
+                }))
+            };
+            return {
+                success: true,
+                message: '批量更新邀请码成功',
+                data: summary
+            };
+        }
+        catch (error) {
+            console.error('❌ 批量更新失败:', error);
+            return {
+                success: false,
+                message: '批量更新邀请码失败',
+                error: error instanceof Error ? error.message : '未知错误'
+            };
+        }
+    }
 };
 exports.InvitesService = InvitesService;
 exports.InvitesService = InvitesService = __decorate([

@@ -98,4 +98,25 @@ export declare class InvitesService {
             created_at: Date;
         };
     }>;
+    batchUpdateInvites(): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            total_codes: number;
+            updated_existing: number;
+            total_available_uses: number;
+            codes: {
+                code: string;
+                max_uses: number;
+                current_uses: number;
+                remaining_uses: number;
+            }[];
+        };
+        error?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        error: string;
+        data?: undefined;
+    }>;
 }

@@ -41,6 +41,10 @@ let InvitesController = class InvitesController {
     async createInviteCode(body) {
         return this.invites.createInviteCode(body.code, body.max_uses, body.description);
     }
+    // 批量更新邀请码
+    async batchUpdateInvites() {
+        return this.invites.batchUpdateInvites();
+    }
 };
 exports.InvitesController = InvitesController;
 __decorate([
@@ -90,6 +94,12 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], InvitesController.prototype, "createInviteCode", null);
+__decorate([
+    (0, common_1.Post)('/admin/batch-update-invites'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], InvitesController.prototype, "batchUpdateInvites", null);
 exports.InvitesController = InvitesController = __decorate([
     (0, common_1.Controller)('/v1'),
     __metadata("design:paramtypes", [invites_service_1.InvitesService])

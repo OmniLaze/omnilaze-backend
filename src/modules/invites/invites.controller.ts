@@ -40,6 +40,12 @@ export class InvitesController {
   async createInviteCode(@Body() body: { code: string; max_uses: number; description?: string }) {
     return this.invites.createInviteCode(body.code, body.max_uses, body.description);
   }
+
+  // 批量更新邀请码
+  @Post('/admin/batch-update-invites')
+  async batchUpdateInvites() {
+    return this.invites.batchUpdateInvites();
+  }
 }
 
 

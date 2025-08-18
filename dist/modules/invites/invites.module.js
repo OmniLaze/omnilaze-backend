@@ -10,13 +10,18 @@ exports.InvitesModule = void 0;
 const common_1 = require("@nestjs/common");
 const invites_controller_1 = require("./invites.controller");
 const invites_service_1 = require("./invites.service");
+const config_module_1 = require("../../config/config.module");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const system_key_guard_1 = require("../../common/guards/system-key.guard");
+const admin_guard_1 = require("../../common/guards/admin.guard");
 let InvitesModule = class InvitesModule {
 };
 exports.InvitesModule = InvitesModule;
 exports.InvitesModule = InvitesModule = __decorate([
     (0, common_1.Module)({
+        imports: [config_module_1.ConfigModule],
         controllers: [invites_controller_1.InvitesController],
-        providers: [invites_service_1.InvitesService],
+        providers: [invites_service_1.InvitesService, jwt_auth_guard_1.JwtAuthGuard, system_key_guard_1.SystemKeyGuard, admin_guard_1.AdminGuard],
     })
 ], InvitesModule);
 //# sourceMappingURL=invites.module.js.map

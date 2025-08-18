@@ -20,7 +20,7 @@ export declare class InvitesService {
         remaining_uses: number;
         eligible_for_free_drink: boolean;
         free_drink_claimed: boolean;
-        free_drinks_remaining: null;
+        free_drinks_remaining: any;
         message?: undefined;
     }>;
     getInviteProgress(userId: string): Promise<{
@@ -49,7 +49,7 @@ export declare class InvitesService {
     }>;
     freeDrinksRemaining(): Promise<{
         success: boolean;
-        free_drinks_remaining: null;
+        free_drinks_remaining: any;
         message: string;
     }>;
     getAllInviteCodes(): Promise<{
@@ -60,8 +60,8 @@ export declare class InvitesService {
             current_uses: number;
             remaining_uses: number;
             created_at: Date;
-            used_by: string | null;
-            used_at: Date | null;
+            used_by: string;
+            used_at: Date;
         }[];
         message?: undefined;
     } | {

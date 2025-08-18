@@ -96,6 +96,10 @@ class ConfigService {
     get alipayNotifyUrl() {
         return process.env.ALIPAY_NOTIFY_URL;
     }
+    // System API Key for protected endpoints
+    get systemApiKey() {
+        return process.env.SYSTEM_API_KEY;
+    }
 }
 exports.ConfigService = ConfigService;
 //# sourceMappingURL=config.service.js.map

@@ -1,25 +1,20 @@
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
-
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN npm ci && npx prisma generate && npm run build
-
-FROM node:20-slim AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
 # Install OpenSSL for Prisma (required for Prisma Client)
-RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache openssl
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY prisma ./prisma
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy app source
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
-
-
+# Use ts-node with transpile-only to skip type checking
+CMD ["npx", "ts-node", "--transpile-only", "src/main.ts"]

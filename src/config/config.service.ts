@@ -63,5 +63,10 @@ export class ConfigService {
   get alipayNotifyUrl(): string | undefined {
     return process.env.ALIPAY_NOTIFY_URL;
   }
+
+  // System API Key for protected endpoints
+  get systemApiKey(): string | undefined {
+    return process.env.SYSTEM_API_KEY;
+  }
 }
 

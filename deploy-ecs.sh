@@ -34,10 +34,16 @@ echo "✅ ECR 仓库就绪: $REPO"
 
 # 2) 构建并推送镜像
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO"
+# 兼容中国区 ECR 域名后缀
+if [[ "$REGION" == cn-* ]]; then
+  ECR_DOMAIN_SUFFIX="amazonaws.com.cn"
+else
+  ECR_DOMAIN_SUFFIX="amazonaws.com"
+fi
+ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.$ECR_DOMAIN_SUFFIX/$REPO"
 TAG=${IMAGE_TAG:-$(date +%Y%m%d-%H%M%S)}
 IMAGE="$ECR_URI:$TAG"
-aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com"
+aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$ACCOUNT_ID.dkr.ecr.$REGION.$ECR_DOMAIN_SUFFIX"
 docker build -t "$IMAGE" .
 docker push "$IMAGE"
 echo "✅ 镜像已推送: $IMAGE"

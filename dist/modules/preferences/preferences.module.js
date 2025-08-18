@@ -10,13 +10,16 @@ exports.PreferencesModule = void 0;
 const common_1 = require("@nestjs/common");
 const preferences_controller_1 = require("./preferences.controller");
 const preferences_service_1 = require("./preferences.service");
+const config_module_1 = require("../../config/config.module");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 let PreferencesModule = class PreferencesModule {
 };
 exports.PreferencesModule = PreferencesModule;
 exports.PreferencesModule = PreferencesModule = __decorate([
     (0, common_1.Module)({
+        imports: [config_module_1.ConfigModule],
         controllers: [preferences_controller_1.PreferencesController],
-        providers: [preferences_service_1.PreferencesService],
+        providers: [preferences_service_1.PreferencesService, jwt_auth_guard_1.JwtAuthGuard],
     })
 ], PreferencesModule);
 //# sourceMappingURL=preferences.module.js.map

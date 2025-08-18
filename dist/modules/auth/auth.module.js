@@ -10,11 +10,13 @@ exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
+const config_module_1 = require("../../config/config.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
+        imports: [config_module_1.ConfigModule],
         providers: [auth_service_1.AuthService],
         controllers: [auth_controller_1.AuthController],
         exports: [auth_service_1.AuthService],

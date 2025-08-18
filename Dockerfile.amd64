@@ -1,0 +1,21 @@
+# Multi-platform Dockerfile specifically for linux/amd64
+FROM --platform=linux/amd64 node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Install OpenSSL for Prisma (required for Prisma Client)
+RUN apk add --no-cache openssl
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy app source
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+EXPOSE 3000
+# Run with ts-node to bypass TS build errors for initial deploy
+CMD ["npx", "ts-node", "src/main.ts"]

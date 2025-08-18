@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InvitesController = void 0;
 const common_1 = require("@nestjs/common");
 const invites_service_1 = require("./invites.service");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const admin_guard_1 = require("../../common/guards/admin.guard");
 let InvitesController = class InvitesController {
     constructor(invites) {
         this.invites = invites;
@@ -31,7 +33,7 @@ let InvitesController = class InvitesController {
     async remaining() {
         return this.invites.freeDrinksRemaining();
     }
-    // 管理员API端点
+    // 管理员API端点 - 使用SystemKeyGuard或JwtAuthGuard+AdminGuard
     async getAllInviteCodes() {
         return this.invites.getAllInviteCodes();
     }
@@ -41,7 +43,7 @@ let InvitesController = class InvitesController {
     async createInviteCode(body) {
         return this.invites.createInviteCode(body.code, body.max_uses, body.description);
     }
-    // 批量更新邀请码
+    // 批量更新邀请码 (一键更新到1000次使用)
     async batchUpdateInvites() {
         return this.invites.batchUpdateInvites();
     }
@@ -49,6 +51,7 @@ let InvitesController = class InvitesController {
 exports.InvitesController = InvitesController;
 __decorate([
     (0, common_1.Get)('/get-user-invite-stats'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Query)('user_id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -56,6 +59,7 @@ __decorate([
 ], InvitesController.prototype, "stats", null);
 __decorate([
     (0, common_1.Get)('/get-invite-progress'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Query)('user_id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -63,6 +67,7 @@ __decorate([
 ], InvitesController.prototype, "progress", null);
 __decorate([
     (0, common_1.Post)('/claim-free-drink'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -76,12 +81,14 @@ __decorate([
 ], InvitesController.prototype, "remaining", null);
 __decorate([
     (0, common_1.Get)('/admin/invite-codes'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], InvitesController.prototype, "getAllInviteCodes", null);
 __decorate([
     (0, common_1.Post)('/admin/update-invite-code'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -89,6 +96,7 @@ __decorate([
 ], InvitesController.prototype, "updateInviteCode", null);
 __decorate([
     (0, common_1.Post)('/admin/create-invite-code'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -96,6 +104,7 @@ __decorate([
 ], InvitesController.prototype, "createInviteCode", null);
 __decorate([
     (0, common_1.Post)('/admin/batch-update-invites'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)

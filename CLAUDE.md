@@ -26,12 +26,17 @@ This is the `omnilaze-backend` - a NestJS REST API backend service for the OmniL
 ### Database Schema (Prisma)
 Key models in `prisma/schema.prisma`:
 - `User` - User accounts with phone authentication and invite codes
-- `Order` - Order records with delivery info, preferences, and payment status
+- `Order` - Order records with delivery info, preferences, payment status, and arrival images
 - `UserPreferences` - Cached user preferences for quick ordering
 - `InviteCode` & `Invitation` - Referral system management
 - `Payment` & `PaymentEvent` - Payment processing and tracking
-- `OrderFeedback` - Rating and feedback system
+- `OrderFeedback` & `OrderVoiceFeedback` - Rating and feedback system with audio support
 - `Reservation` - Future reservation system
+
+**Recent Schema Updates**:
+- Added arrival image fields (`arrivalImageUrl`, `arrivalImageSource`, `arrivalImageTakenAt`)
+- Added voice feedback support via `OrderVoiceFeedback` model
+- Added delivery time field for order scheduling
 
 ## Development Commands
 
@@ -81,6 +86,9 @@ npx tsc --noEmit
 
 # Database operations testing
 npm run prisma:studio  # Visual database browser for data verification
+
+# Utility scripts for invite code management
+npm run check:invites  # Check invite code status
 ```
 
 ## Deployment Architecture
@@ -103,13 +111,14 @@ npm run prisma:studio  # Visual database browser for data verification
 - **CORS**: Configurable origins via `CORS_ORIGINS` environment variable
 - **Rate Limiting**: 120 requests per minute per IP
 - **API Documentation**: Swagger UI available at `/docs`
+- **Multi-stage Docker Build**: Optimized for production with separate deps, builder, and runner stages
 
 ## Environment Configuration
 
 ### Production Configuration
 ```bash
 # Current production endpoints
-FRONTEND_URL="https://backend.omnilaze.co"
+BACKEND_URL="https://backend.omnilaze.co"
 SWAGGER_DOCS="https://backend.omnilaze.co/docs"
 HEALTH_CHECK="https://backend.omnilaze.co/v1/health"
 
@@ -118,6 +127,35 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/omnilaze"
 CORS_ORIGINS='["http://localhost:8081", "http://localhost:3000"]'
 PORT=3000
 NODE_ENV=development
+
+# Required environment variables
+JWT_SECRET="your-jwt-secret"
+
+# WeChat Pay configuration (微信支付)
+WECHAT_MCH_ID="your-merchant-id"              # 商户号
+WECHAT_APP_ID="your-app-id"                    # 应用ID
+WECHAT_API_KEY_V3="your-api-key-v3"            # API密钥v3
+WECHAT_SERIAL_NO="your-cert-serial-no"         # 商户证书序列号
+WECHAT_PRIVATE_KEY="your-private-key"          # 商户私钥（PEM格式）
+WECHAT_NOTIFY_URL="https://backend.omnilaze.co/v1/payments/webhook/wechatpay"
+WECHAT_GATEWAY="https://api.mch.weixin.qq.com" # API网关地址
+
+# Alipay payment configuration (保留兼容)
+ALIPAY_APP_ID="your-alipay-app-id"
+ALIPAY_PRIVATE_KEY="your-alipay-private-key"
+ALIPAY_PUBLIC_KEY="your-alipay-public-key"
+ALIPAY_GATEWAY="https://openapi.alipay.com/gateway.do"
+ALIPAY_NOTIFY_URL="https://backend.omnilaze.co/v1/payments/webhook/alipay"
+
+# Admin access control
+SYSTEM_API_KEY="your-system-api-key"  # For protected endpoints
+ADMIN_USER_IDS="user_id_1,user_id_2"  # Comma-separated admin user IDs
+
+# Aliyun SMS service (required for SMS verification)
+ALIYUN_ACCESS_KEY_ID="your-aliyun-access-key-id"
+ALIYUN_ACCESS_KEY_SECRET="your-aliyun-access-key-secret"
+ALIYUN_SMS_SIGN_NAME="your-sms-signature"  # SMS signature name
+ALIYUN_SMS_TEMPLATE_CODE="SMS_XXXXXX"     # SMS template code
 ```
 
 ### Docker Development
@@ -149,15 +187,22 @@ npm run dev
 - **Phone-based Registration**: Users authenticate via phone numbers
 - **Role-based Access**: User roles with guard-based protection
 - **Invite System**: Referral codes for user onboarding
+- **System Key Guard**: Protected endpoints using `SYSTEM_API_KEY` for administrative access
+- **User Ownership Validation**: All user-specific operations verify ownership via JWT claims
+- **Admin Guard**: Role-based admin access using `ADMIN_USER_IDS` environment variable
 
 ### Real-time Features
-- **WebSocket Support**: `OrdersGateway` for real-time order updates
-- **Socket.IO Integration**: Bi-directional communication with clients
+- **WebSocket Support**: `OrdersGateway` for real-time order updates with JWT authentication
+- **Socket.IO Integration**: Bi-directional communication with authenticated clients only
+- **Secure Room Subscriptions**: Users can only subscribe to their own channels
 
 ### Payment Processing
-- **Alipay Integration**: `AlipayProvider` for Chinese market payment processing
+- **WeChat Pay Integration**: `WechatPayProvider` for Chinese market payment processing (H5, JSAPI, Native)
+- **Alipay Integration**: `AlipayProvider` for alternative payment method (retained for compatibility)
 - **Payment Events**: Comprehensive payment event tracking and webhook handling
 - **Order-Payment Linking**: Integrated order and payment lifecycle management
+- **Refund Support**: Full and partial refund capabilities with WeChat Pay
+- **Payment Query**: Real-time payment status checking and synchronization
 
 ### Data Validation & API Documentation
 - **Class Validation**: Global validation pipe with DTO transformation
@@ -183,7 +228,10 @@ Each feature follows consistent NestJS patterns:
 
 ### Authentication & Security
 - **JWT Guards**: Custom `JwtAuthGuard` for endpoint protection
+- **Current User Decorator**: `@CurrentUser()` and `@CurrentUserId()` for extracting authenticated user data
 - **Role-based Access**: `@Roles()` decorator with `RolesGuard` for authorization
+- **Admin Access Control**: `AdminGuard` for role-based administrative access
+- **User Ownership Validation**: Automatic verification that users can only access their own data
 - **Input Validation**: Global validation pipe with whitelist and transformation
 - **Rate Limiting**: 120 requests per minute per IP address
 - **CORS Configuration**: Environment-based origin allowlist
@@ -197,15 +245,86 @@ Each feature follows consistent NestJS patterns:
 ### WebSocket Integration
 - **Real-time Updates**: OrdersGateway provides live order status updates
 - **Socket.IO**: Bi-directional communication for order tracking
-- **Room-based Updates**: Users receive updates only for their orders
+- **JWT Authentication**: WebSocket connections require valid JWT tokens
+- **Secure Subscriptions**: Users can only subscribe to their own user/order channels
+- **Environment-based CORS**: Configurable origins instead of wildcard
+
+## Security Architecture
+
+### User Authentication Pattern
+All user-facing endpoints follow this security pattern:
+```typescript
+@UseGuards(JwtAuthGuard)
+async userEndpoint(
+  @CurrentUserId() userId: string,
+  @CurrentUser() user: JwtPayload, // Contains: sub, phone, role
+  @CurrentUser('phone') phoneNumber: string,
+  @Body() body: SomeDTO
+) {
+  // Use userId from JWT, never from request body
+  // Verify ownership in service layer
+}
+```
+
+### Admin Endpoint Pattern
+Administrative endpoints use system key or admin role validation:
+```typescript
+// Option 1: System Key (Recommended for external services)
+@UseGuards(SystemKeyGuard)
+async adminEndpoint(@Body() body: AdminDTO) {
+  // Only accessible with correct system key in X-System-Key header
+}
+
+// Option 2: Admin Role (For authenticated admin users)
+@UseGuards(JwtAuthGuard, AdminGuard)
+async adminEndpoint(@CurrentUserId() userId: string, @Body() body: AdminDTO) {
+  // Only accessible by users listed in ADMIN_USER_IDS
+}
+
+// Option 3: Role-based (Using @Roles decorator)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'moderator')
+async adminEndpoint(@CurrentUser() user: JwtPayload, @Body() body: AdminDTO) {
+  // Only accessible by users with admin or moderator role
+}
+```
+
+**Current Strategy**: Administrative endpoints use `SystemKeyGuard` for external service access. This provides better security for automated systems and allows for easy revocation of access.
+
+### WebSocket Authentication
+WebSocket clients must authenticate with JWT tokens:
+```javascript
+// Client-side connection
+const socket = io('/ws', {
+  auth: { token: 'your-jwt-token' }
+});
+```
+
+### Common Security Decorators
+- `@CurrentUser()` - Extract full JWT payload
+- `@CurrentUserId()` - Extract user ID from JWT
+- `@UseGuards(JwtAuthGuard)` - Require valid JWT
+- `@UseGuards(SystemKeyGuard)` - Require system API key
+- `@UseGuards(AdminGuard)` - Require admin role (needs JWT first)
+
+
+## Utility Scripts & Management
+
+### Invite Code Management
+Located in `scripts/` directory:
+- `check-invites.ts` - TypeScript script to check invite code status
+- `manage-invites.js` - JavaScript utility for invite code operations  
+- `update-invites-*.ts/js` - Various scripts for updating invite codes
+- `invite-codes-update.sql` - SQL scripts for direct database updates
 
 ## Critical Implementation Notes
 
 ### Docker Multi-stage Build
 The Dockerfile uses multi-stage build for production optimization:
-- Build stage: Node.js for TypeScript compilation and Prisma generation
-- Runtime stage: Minimal Node.js Alpine image for production
-- Binary targets ensure compatibility with Linux containers
+- **Dependencies Stage**: `node:20-alpine` with production deps only
+- **Builder Stage**: `node:20-alpine` for TypeScript compilation and Prisma generation  
+- **Runner Stage**: `node:20-slim` with OpenSSL for Prisma Client compatibility
+- Binary targets ensure compatibility with Linux containers (`linux-musl`, `debian-openssl-3.0.x`)
 
 ### AWS ECS Integration
 - **Task Definition**: Auto-generated with image URIs from ECR
@@ -233,7 +352,9 @@ The application adapts behavior based on `NODE_ENV`:
 ### WebSocket Connection Problems
 - Check that Socket.IO client connects to correct backend URL
 - Verify CORS settings allow WebSocket upgrades
+- Ensure client provides valid JWT token in auth or query params
 - Monitor browser network tab for connection attempts
+- Check server logs for authentication failures
 
 ## Infrastructure Requirements
 
@@ -256,14 +377,27 @@ The application adapts behavior based on `NODE_ENV`:
 - Rate limiting enabled (120 req/min per IP)
 - CORS configured for specific origins only
 - Input validation on all endpoints
+- System API key protection for administrative endpoints
+- User ownership validation prevents unauthorized data access
+- WebSocket authentication prevents unauthorized real-time subscriptions
+- Admin role enforcement for sensitive operations
 
 ### Performance Optimizations  
 - Prisma connection pooling
 - Express body parsing limits (1MB JSON limit)
 - Efficient database queries with Prisma relations
 - WebSocket support for real-time features
+- Multi-stage Docker builds for smaller production images
 
 ### Monitoring & Health
 - Health check endpoint at `/v1/health`
 - Request logging for debugging and monitoring
 - Container-based deployment for scalability
+- Comprehensive CI/CD pipeline with automated migrations
+
+### Architecture Highlights
+- **Modular Design**: Feature-based module organization following NestJS best practices
+- **Type Safety**: Full TypeScript with Prisma-generated types throughout the application
+- **Real-time Communication**: WebSocket gateway for live order updates and notifications
+- **Payment Integration**: Alipay provider with webhook support and event tracking
+- **Invite System**: Comprehensive referral and invitation management with usage tracking

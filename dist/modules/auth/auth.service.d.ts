@@ -3,9 +3,9 @@ export declare class AuthService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     /**
-     * 创建阿里云Dypnsapi客户端
+     * 创建传统阿里云短信客户端
      */
-    private createDypnsapiClient;
+    private createSmsClient;
     sendVerificationCode(phoneNumber: string): Promise<{
         success: boolean;
         message: string;
@@ -24,9 +24,9 @@ export declare class AuthService {
         message: string;
         data: {
             sent: boolean;
-            dev_code: string | undefined;
-            bizId: string | undefined;
-            requestId: any;
+            bizId: string;
+            requestId: string;
+            dev_code?: undefined;
         };
     }>;
     loginWithPhone(phoneNumber: string, verificationCode: string): Promise<{
@@ -37,7 +37,7 @@ export declare class AuthService {
         success: boolean;
         message: string;
         data: {
-            user_id: null;
+            user_id: any;
             phone_number: string;
             is_new_user: boolean;
             user_sequence?: undefined;
@@ -49,7 +49,7 @@ export declare class AuthService {
             user_id: string;
             phone_number: string;
             is_new_user: boolean;
-            user_sequence: number | undefined;
+            user_sequence: number;
         };
     }>;
     verifyInviteAndCreate(phoneNumber: string, inviteCode: string): Promise<{
@@ -62,51 +62,8 @@ export declare class AuthService {
         data: {
             user_id: string;
             phone_number: string;
-            user_sequence: number | undefined;
-            user_invite_code: string | undefined;
+            user_sequence: number;
+            user_invite_code: string;
         };
-    }>;
-    getAliyunAuthToken(): Promise<{
-        success: boolean;
-        message: string;
-        data?: undefined;
-    } | {
-        success: boolean;
-        message: string;
-        data: {
-            authToken: any;
-            requestId: string | undefined;
-        };
-    }>;
-    loginWithAliyunSpToken(spToken: string): Promise<{
-        success: boolean;
-        message: string;
-        code?: undefined;
-        data?: undefined;
-    } | {
-        success: boolean;
-        code: string;
-        message: string;
-        data?: undefined;
-    } | {
-        success: boolean;
-        message: string;
-        data: {
-            user_id: null;
-            phone_number: any;
-            is_new_user: boolean;
-            user_sequence?: undefined;
-        };
-        code?: undefined;
-    } | {
-        success: boolean;
-        message: string;
-        data: {
-            user_id: string;
-            phone_number: string;
-            is_new_user: boolean;
-            user_sequence: number | undefined;
-        };
-        code?: undefined;
     }>;
 }

@@ -11,13 +11,17 @@ const common_1 = require("@nestjs/common");
 const orders_controller_1 = require("./orders.controller");
 const orders_service_1 = require("./orders.service");
 const orders_gateway_1 = require("./orders.gateway");
+const config_module_1 = require("../../config/config.module");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const system_key_guard_1 = require("../../common/guards/system-key.guard");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
 exports.OrdersModule = OrdersModule = __decorate([
     (0, common_1.Module)({
+        imports: [config_module_1.ConfigModule],
         controllers: [orders_controller_1.OrdersController],
-        providers: [orders_service_1.OrdersService, orders_gateway_1.OrdersGateway],
+        providers: [orders_service_1.OrdersService, orders_gateway_1.OrdersGateway, jwt_auth_guard_1.JwtAuthGuard, system_key_guard_1.SystemKeyGuard],
         exports: [orders_service_1.OrdersService],
     })
 ], OrdersModule);

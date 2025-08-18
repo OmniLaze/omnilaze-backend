@@ -8,6 +8,7 @@ import { PreferencesModule } from './modules/preferences/preferences.module';
 import { InvitesModule } from './modules/invites/invites.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { AppController } from './app.controller';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -19,9 +20,9 @@ import { AppController } from './app.controller';
     PreferencesModule,
     InvitesModule,
     PaymentsModule,
+    AdminModule,
   ],
   controllers: [AppController],
 })
 export class AppModule {}
-
 

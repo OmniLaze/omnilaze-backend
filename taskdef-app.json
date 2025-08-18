@@ -9,9 +9,18 @@
   "containerDefinitions": [
     {
       "name": "app",
-      "image": "public.ecr.aws/docker/library/nginx:latest",
+      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:20250818-210853",
       "essential": true,
-      "portMappings": [{ "containerPort": 3000 }]
+      "portMappings": [{ "containerPort": 3000 }],
+      "environment": [{"name": "NODE_ENV", "value": "production"}, {"name": "PORT", "value": "3000"}, {"name": "DATABASE_URL", "value": "postgresql://postgres:Omnilaze2024\\!@omnilaze-postgres.czoamaem021x.ap-southeast-1.rds.amazonaws.com:5432/omnilaze"}],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/omnilaze-service",
+          "awslogs-region": "ap-southeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
     }
   ]
 }

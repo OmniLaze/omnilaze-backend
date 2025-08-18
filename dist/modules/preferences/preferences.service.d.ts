@@ -101,13 +101,13 @@ export declare class PreferencesService {
         has_preferences: boolean;
         form_data: {
             address: string;
-            selectedFoodType: never[];
-            selectedAllergies: never[];
-            selectedPreferences: never[];
+            selectedFoodType: any[];
+            selectedAllergies: any[];
+            selectedPreferences: any[];
             budget: string;
             otherAllergyText: string;
             otherPreferenceText: string;
-            selectedAddressSuggestion: null;
+            selectedAddressSuggestion: any;
         };
         can_quick_order?: undefined;
     } | {

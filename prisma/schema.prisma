@@ -67,8 +67,15 @@ model Order {
   paidAt        DateTime? @map("paid_at")
   paymentId     String?  @map("payment_id")
 
+  // arrival image fields
+  arrivalImageUrl      String?   @map("arrival_image_url")
+  arrivalImageSource   String?   @map("arrival_image_source")
+  arrivalImageTakenAt  DateTime? @map("arrival_image_taken_at")
+  arrivalImageImportedAt DateTime? @map("arrival_image_imported_at")
+
   user User @relation(fields: [userId], references: [id])
   feedbacks OrderFeedback[]
+  voiceFeedbacks OrderVoiceFeedback[]
 }
 
 model UserPreferences {
@@ -123,6 +130,18 @@ model OrderFeedback {
   rating    Int
   comment   String?
   createdAt DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model OrderVoiceFeedback {
+  id          String   @id @default(uuid())
+  orderId     String   @map("order_id")
+  userId      String   @map("user_id")
+  audioUrl    String   @map("audio_url")
+  durationSec Int?     @map("duration_sec")
+  transcript  String?
+  createdAt   DateTime @default(now()) @map("created_at")
 
   order Order @relation(fields: [orderId], references: [id])
 }

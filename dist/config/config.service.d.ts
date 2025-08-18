@@ -10,4 +10,5 @@ export declare class ConfigService {
     get alipayPublicKey(): string | undefined;
     get alipayGateway(): string;
     get alipayNotifyUrl(): string | undefined;
+    get systemApiKey(): string | undefined;
 }

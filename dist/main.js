@@ -32,7 +32,7 @@ async function bootstrap() {
         },
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         // Allow common headers to reduce preflight failures
-        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-System-Key'],
         credentials: true,
         exposedHeaders: ['Authorization'],
     });

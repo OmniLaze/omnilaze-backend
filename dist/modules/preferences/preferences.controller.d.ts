@@ -2,7 +2,7 @@ import { PreferencesService } from './preferences.service';
 export declare class PreferencesController {
     private readonly prefs;
     constructor(prefs: PreferencesService);
-    get(userId: string): Promise<{
+    get(currentUserId: string, userId: string): Promise<{
         success: boolean;
         message: string;
         has_preferences?: undefined;
@@ -27,8 +27,7 @@ export declare class PreferencesController {
         };
         message?: undefined;
     }>;
-    save(body: {
-        user_id: string;
+    save(userId: string, body: {
         form_data: any;
     }): Promise<{
         success: boolean;
@@ -55,7 +54,7 @@ export declare class PreferencesController {
         };
         message?: undefined;
     }>;
-    update(userId: string, updates: any): Promise<{
+    update(currentUserId: string, userId: string, updates: any): Promise<{
         success: boolean;
         message: string;
         has_preferences?: undefined;
@@ -80,11 +79,11 @@ export declare class PreferencesController {
         };
         message?: undefined;
     }>;
-    remove(userId: string): Promise<{
+    remove(currentUserId: string, userId: string): Promise<{
         success: boolean;
         message: string;
     }>;
-    complete(userId: string): Promise<{
+    complete(currentUserId: string, userId: string): Promise<{
         success: boolean;
         has_preferences: boolean;
         is_complete: boolean;
@@ -99,18 +98,18 @@ export declare class PreferencesController {
         preferences: any;
         message?: undefined;
     }>;
-    asForm(userId: string): Promise<{
+    asForm(currentUserId: string, userId: string): Promise<{
         success: boolean;
         has_preferences: boolean;
         form_data: {
             address: string;
-            selectedFoodType: never[];
-            selectedAllergies: never[];
-            selectedPreferences: never[];
+            selectedFoodType: any[];
+            selectedAllergies: any[];
+            selectedPreferences: any[];
             budget: string;
             otherAllergyText: string;
             otherPreferenceText: string;
-            selectedAddressSuggestion: null;
+            selectedAddressSuggestion: any;
         };
         can_quick_order?: undefined;
     } | {

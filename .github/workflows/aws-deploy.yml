@@ -61,6 +61,22 @@ jobs:
           NEW_TD_ARN=$(aws ecs register-task-definition --cli-input-json file://td-new.json --query 'taskDefinition.taskDefinitionArn' --output text)
           echo "NEW_TD_ARN=$NEW_TD_ARN" >> $GITHUB_ENV
 
+      - name: Register migration Task Definition with new image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          CURRENT_MIGRATION_TD_ARN=$(aws ecs describe-task-definition --task-definition "omnilaze-migrations" --query 'taskDefinition.taskDefinitionArn' --output text || echo "")
+          if [ -n "$CURRENT_MIGRATION_TD_ARN" ]; then
+            aws ecs describe-task-definition --task-definition "$CURRENT_MIGRATION_TD_ARN" --query 'taskDefinition' > migration-td.json
+          else
+            cp migration-task-definition.json migration-td.json
+          fi
+          NEW_IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          jq --arg new_image "$NEW_IMAGE" 'del(.revision,.status,.taskDefinitionArn,.requiresAttributes,.registeredAt,.registeredBy,.compatibilities) | (.containerDefinitions[0].image)=$new_image' migration-td.json > migration-td-new.json
+          MIGRATION_TD_ARN=$(aws ecs register-task-definition --cli-input-json file://migration-td-new.json --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "MIGRATION_TD_ARN=$MIGRATION_TD_ARN" >> $GITHUB_ENV
+
       - name: Update ECS service to new task definition
         run: |
           aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --task-definition "$NEW_TD_ARN"
@@ -69,8 +85,8 @@ jobs:
         run: |
           aws ecs run-task \
             --cluster $ECS_CLUSTER \
-            --task-definition $ECS_TASK_MIGRATIONS \
+            --task-definition $MIGRATION_TD_ARN \
             --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=DISABLED}"
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=ENABLED}"
 
 

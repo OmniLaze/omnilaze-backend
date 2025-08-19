@@ -136,7 +136,7 @@ export class OrdersController {
   }
 
   @Post('/admin/orders/:orderId/arrival-image/upload')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(SystemKeyGuard)
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
     fileFilter: (req, file, cb) => {
@@ -215,7 +215,7 @@ export class OrdersController {
 
   // Admin: list recent orders across all users (incremental polling)
   @Get('/admin/orders')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(SystemKeyGuard)
   @ApiOperation({ summary: 'Admin list orders', description: 'List recent orders across all users with optional incremental filter' })
   @ApiQuery({ name: 'since', required: false, description: 'Only return orders created after this ISO timestamp' })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by order status' })
@@ -231,7 +231,7 @@ export class OrdersController {
   }
 
   @Get('/admin/orders/:orderId')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(SystemKeyGuard)
   @ApiOperation({ summary: 'Admin get order detail', description: 'Get full order detail including relations' })
   @ApiParam({ name: 'orderId', description: 'Order ID' })
   async adminGetOne(@Param('orderId') orderId: string) {

@@ -1,12 +1,11 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AdminInvitationsService } from './admin.invitations.service';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { AdminGuard } from '../../common/guards/admin.guard';
+import { SystemKeyGuard } from '../../common/guards/system-key.guard';
 
 @ApiTags('Admin - Invitations')
 @Controller('/v1/admin/invitations')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(SystemKeyGuard)
 export class AdminInvitationsController {
   constructor(private readonly invitationsService: AdminInvitationsService) {}
 

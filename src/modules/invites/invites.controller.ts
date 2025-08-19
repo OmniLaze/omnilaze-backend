@@ -33,26 +33,26 @@ export class InvitesController {
 
   // 管理员API端点 - 使用SystemKeyGuard或JwtAuthGuard+AdminGuard
   @Get('/admin/invite-codes')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(SystemKeyGuard)
   async getAllInviteCodes() {
     return this.invites.getAllInviteCodes();
   }
 
   @Post('/admin/update-invite-code')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(SystemKeyGuard)
   async updateInviteCode(@Body() body: { code: string; max_uses: number }) {
     return this.invites.updateInviteCodeMaxUses(body.code, body.max_uses);
   }
 
   @Post('/admin/create-invite-code')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(SystemKeyGuard)
   async createInviteCode(@Body() body: { code: string; max_uses: number; description?: string }) {
     return this.invites.createInviteCode(body.code, body.max_uses, body.description);
   }
 
   // 批量更新邀请码 (一键更新到1000次使用)
   @Post('/admin/batch-update-invites')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(SystemKeyGuard)
   async batchUpdateInvites() {
     return this.invites.batchUpdateInvites();
   }

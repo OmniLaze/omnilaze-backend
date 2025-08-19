@@ -16,7 +16,7 @@ exports.InvitesController = void 0;
 const common_1 = require("@nestjs/common");
 const invites_service_1 = require("./invites.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
-const admin_guard_1 = require("../../common/guards/admin.guard");
+const system_key_guard_1 = require("../../common/guards/system-key.guard");
 let InvitesController = class InvitesController {
     constructor(invites) {
         this.invites = invites;
@@ -81,14 +81,14 @@ __decorate([
 ], InvitesController.prototype, "remaining", null);
 __decorate([
     (0, common_1.Get)('/admin/invite-codes'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.UseGuards)(system_key_guard_1.SystemKeyGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], InvitesController.prototype, "getAllInviteCodes", null);
 __decorate([
     (0, common_1.Post)('/admin/update-invite-code'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.UseGuards)(system_key_guard_1.SystemKeyGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -96,7 +96,7 @@ __decorate([
 ], InvitesController.prototype, "updateInviteCode", null);
 __decorate([
     (0, common_1.Post)('/admin/create-invite-code'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.UseGuards)(system_key_guard_1.SystemKeyGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -104,7 +104,7 @@ __decorate([
 ], InvitesController.prototype, "createInviteCode", null);
 __decorate([
     (0, common_1.Post)('/admin/batch-update-invites'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.UseGuards)(system_key_guard_1.SystemKeyGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)

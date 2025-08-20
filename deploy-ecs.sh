@@ -63,6 +63,9 @@ if ! aws iam get-role --role-name "$EXEC_ROLE_NAME" >/dev/null 2>&1; then
     }' >/dev/null
   aws iam attach-role-policy --role-name "$EXEC_ROLE_NAME" \
     --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+  # Add SSM Parameter Store access for secrets
+  aws iam attach-role-policy --role-name "$EXEC_ROLE_NAME" \
+    --policy-arn arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
 fi
 EXEC_ROLE_ARN=$(aws iam get-role --role-name "$EXEC_ROLE_NAME" --query 'Role.Arn' --output text)
 TASK_ROLE_ARN=${TASK_ROLE_ARN:-$EXEC_ROLE_ARN}
@@ -70,7 +73,10 @@ TASK_ROLE_ARN=${TASK_ROLE_ARN:-$EXEC_ROLE_ARN}
 # 5) 生成 Task Definition（使用后端镜像 + 环境变量 + 日志）
 ENV_KEYS=(NODE_ENV PORT DATABASE_URL REDIS_URL JWT_SECRET CORS_ORIGINS \
   ALIYUN_ACCESS_KEY_ID ALIYUN_ACCESS_KEY_SECRET ALIYUN_REGION_ID ALIYUN_DYPN_ENDPOINT \
-  ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE ALIYUN_SMS_SCHEME_NAME SKIP_DB_CONNECTION)
+  ALIYUN_SMS_SIGN_NAME ALIYUN_SMS_TEMPLATE_CODE ALIYUN_SMS_SCHEME_NAME SKIP_DB_CONNECTION \
+  ALIPAY_GATEWAY ALIPAY_NOTIFY_URL ALIPAY_RETURN_URL \
+  WECHAT_MCH_ID WECHAT_APP_ID WECHAT_API_KEY_V3 WECHAT_SERIAL_NO WECHAT_PRIVATE_KEY WECHAT_NOTIFY_URL WECHAT_GATEWAY \
+  SYSTEM_API_KEY)
 
 ENV_JSON="[]"
 for key in "${ENV_KEYS[@]}"; do
@@ -103,6 +109,20 @@ cat > taskdef-app.json <<JSON
       "essential": true,
       "portMappings": [{ "containerPort": $CONTAINER_PORT }],
       "environment": $ENV_JSON,
+      "secrets": [
+        {
+          "name": "ALIPAY_APP_ID",
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/alipay/app-id"
+        },
+        {
+          "name": "ALIPAY_PRIVATE_KEY",
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/alipay/private-key"
+        },
+        {
+          "name": "ALIPAY_PUBLIC_KEY",
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/alipay/public-key"
+        }
+      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {

@@ -1,0 +1,83 @@
+{
+  "family": "omnilaze-app",
+  "taskRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:163fb9b75dfc5df0c9ff8485b50b810026eaecd7",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "SYSTEM_API_KEY",
+          "value": "test-system-key-change-in-production"
+        },
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "DATABASE_URL",
+          "value": "postgresql://postgres:Omnilaze2024!@omnilaze-postgres.czoamaem021x.ap-southeast-1.rds.amazonaws.com:5432/omnilaze"
+        },
+        {
+          "name": "PORT",
+          "value": "3000"
+        },
+        {
+          "name": "CORS_ORIGINS",
+          "value": "[\"https://order.omnilaze.co\",\"http://localhost:8081\",\"http://localhost:3000\"]"
+        },
+        {
+          "name": "JWT_SECRET",
+          "value": "omnilaze-jwt-secret-2024"
+        },
+        {
+          "name": "ALIPAY_GATEWAY",
+          "value": "https://openapi.alipay.com/gateway.do"
+        },
+        {
+          "name": "ALIPAY_NOTIFY_URL",
+          "value": "https://backend.omnilaze.co/v1/payments/webhook/alipay"
+        },
+        {
+          "name": "ALIPAY_RETURN_URL",
+          "value": "https://order.omnilaze.co/payment/callback"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "ALIPAY_APP_ID",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/app-id"
+        },
+        {
+          "name": "ALIPAY_PRIVATE_KEY",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/private-key"
+        },
+        {
+          "name": "ALIPAY_PUBLIC_KEY",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/public-key"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/omnilaze-service",
+          "awslogs-region": "ap-southeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

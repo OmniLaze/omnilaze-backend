@@ -1,207 +1,247 @@
-# AWS基础设施部署指南
+# AWS 基础设施管理
 
 ## 概述
 
-本指南提供了为OmniLaze应用创建完整AWS后端基础设施的脚本和步骤。
+本目录包含 OmniLaze 项目的 AWS 基础设施管理工具。所有功能已整合到单个脚本中，提供完整的基础设施生命周期管理。
 
-## 网络架构
+## 🔧 主要工具
 
-基于迁移文档的网络设计：
+### `aws-infrastructure.sh` - 一体化基础设施管理工具
+
+这个脚本整合了所有基础设施管理功能：
+
+```bash
+# 显示帮助信息
+./infra/aws-infrastructure.sh help
+
+# 创建完整的基础设施
+./infra/aws-infrastructure.sh setup
+
+# 验证基础设施状态
+./infra/aws-infrastructure.sh validate
+
+# 显示基础设施状态概览
+./infra/aws-infrastructure.sh status
+
+# 配置 HTTPS 监听器（需要 SSL 证书已验证）
+./infra/aws-infrastructure.sh https
+
+# ⚠️ 删除所有基础设施（不可逆）
+./infra/aws-infrastructure.sh cleanup
+```
+
+## 🏗️ 网络架构
+
+基于 AWS 最佳实践的三层网络架构：
 
 - **VPC**: 10.0.0.0/16
 - **公共子网**: 10.0.1.0/24 (1a), 10.0.2.0/24 (1c)
-- **私有应用子网**: 10.0.10.0/24 (1a), 10.0.12.0/24 (1c)
+- **私有应用子网**: 10.0.10.0/24 (1a), 10.0.12.0/24 (1c) 
 - **私有数据库子网**: 10.0.20.0/24 (1a), 10.0.21.0/24 (1c)
 
-## 脚本文件
+## 📋 创建的 AWS 资源
 
-### 1. 主基础设施脚本
-**文件**: `setup-complete-aws-infrastructure.sh`
-
-**功能**:
-- 创建VPC和完整的网络架构
-- 设置安全组（ALB、ECS、RDS）
-- 创建RDS PostgreSQL数据库
-- 创建Application Load Balancer
-- 申请SSL证书
-- 创建ECS集群
-- 配置所有必要的AWS资源
-
-**使用方法**:
-```bash
-./infra/setup-complete-aws-infrastructure.sh
-```
-
-**输出**: 所有创建的资源ID，用于后续配置
-
-### 2. HTTPS配置脚本
-**文件**: `setup-https-listener.sh`
-
-**功能**:
-- 验证SSL证书状态
-- 创建HTTPS监听器
-- 配置ALB的HTTPS终端
-
-**使用方法**:
-```bash
-./infra/setup-https-listener.sh
-```
-
-**前提条件**: SSL证书必须已验证
-
-### 3. 资源清理脚本
-**文件**: `cleanup-aws-infrastructure.sh`
-
-**功能**:
-- 安全删除所有创建的AWS资源
-- 按正确顺序删除资源以避免依赖错误
-- 释放所有相关费用
-
-**使用方法**:
-```bash
-./infra/cleanup-aws-infrastructure.sh
-```
-
-**警告**: 此操作不可逆，会删除所有数据
-
-## 部署步骤
-
-### 第一步：基础设施创建
-```bash
-cd /omnilaze-backend
-./infra/setup-complete-aws-infrastructure.sh
-```
-
-**预期时间**: 15-20分钟
-**输出**: 资源ID列表
-
-### 第二步：SSL证书验证
-1. 从脚本输出中获取证书ARN
-2. 在DNS提供商处添加验证记录
-3. 等待证书状态变为"ISSUED"
-
-### 第三步：HTTPS配置
-```bash
-./infra/setup-https-listener.sh
-```
-
-**输入**: ALB ARN、Target Group ARN、Certificate ARN
-
-### 第四步：DNS配置
-在DNS提供商处创建CNAME记录：
-- **名称**: backend.omnilaze.co
-- **值**: [ALB DNS名称]
-
-## 创建的AWS资源
-
-### 网络资源
-- 1个VPC
+### 网络资源 (9个)
+- 1个 VPC (10.0.0.0/16)
 - 6个子网（2个公共，2个私有应用，2个私有数据库）
-- 3个路由表
-- 1个Internet Gateway
-- 2个NAT Gateway
-- 2个弹性IP
+- 3个路由表（1个公共，2个私有）
+- 1个 Internet Gateway
+- 2个 NAT Gateway
+- 2个弹性 IP
 
-### 安全资源
+### 安全资源 (4个)
 - 3个安全组（ALB、ECS、RDS）
-- 1个SSL证书
+- 1个 SSL 证书
 
-### 计算和存储资源
-- 1个Application Load Balancer
+### 计算和存储资源 (5个)
+- 1个 Application Load Balancer
 - 1个目标组
-- 1个ECS集群
-- 1个RDS PostgreSQL实例
+- 1个 ECS 集群
+- 1个 RDS PostgreSQL 实例 (db.t3.micro)
+- 1个 RDS 子网组
 
-### 其他资源
-- 1个RDS子网组
-- 1个Secrets Manager密钥
+## 🚀 快速开始
 
-## 配置参数
-
-### 当前配置
-- **AWS区域**: ap-southeast-1
-- **AWS账号**: 442729101249
-- **域名**: backend.omnilaze.co
-- **数据库引擎**: PostgreSQL 15.7
-- **实例类型**: db.t3.micro
-
-### 环境变量
-脚本会输出以下环境变量，用于后续部署：
-
+### 1. 创建基础设施
 ```bash
-export VPC_ID="vpc-xxxxxxxxx"
-export PRIVATE_APP_SUBNET_1_ID="subnet-xxxxxxxxx"
-export PRIVATE_APP_SUBNET_2_ID="subnet-xxxxxxxxx"
-export ECS_SG_ID="sg-xxxxxxxxx"
-export TARGET_GROUP_ARN="arn:aws:elasticloadbalancing:..."
-export DB_ENDPOINT="xxxxx.rds.amazonaws.com"
-export SECRET_ARN="arn:aws:secretsmanager:..."
-export CERT_ARN="arn:aws:acm:..."
+./infra/aws-infrastructure.sh setup
+```
+**预期时间**: 15-20 分钟  
+**输出**: 完整的资源创建摘要
+
+### 2. 验证 SSL 证书
+1. 从脚本输出获取 DNS 验证记录
+2. 在 DNS 提供商处添加验证记录
+3. 等待证书状态变为 "ISSUED"
+
+### 3. 配置 HTTPS
+```bash
+./infra/aws-infrastructure.sh https
 ```
 
-## 费用估算
+### 4. 配置域名解析
+在 DNS 提供商处创建 CNAME 记录：
+- **名称**: backend
+- **值**: [ALB DNS 名称]
 
-### 每月预估费用（ap-southeast-1）
-- **VPC**: 免费
-- **NAT Gateway**: ~$45/月（2个）
-- **ALB**: ~$25/月
-- **RDS t3.micro**: ~$15/月
-- **弹性IP**: ~$7/月（2个）
-- **SSL证书**: 免费
+### 5. 验证部署
+```bash
+./infra/aws-infrastructure.sh validate
+```
 
-**总计**: ~$92/月
+## 💰 费用估算
 
-## 故障排除
+### 每月预估费用（ap-southeast-1 区域）
+- **VPC & 子网**: 免费
+- **NAT Gateway**: ~$45/月（2个 × $22.5）
+- **Application Load Balancer**: ~$25/月
+- **RDS db.t3.micro**: ~$15/月
+- **弹性 IP**: ~$7/月（2个 × $3.5）
+- **SSL 证书**: 免费
+- **数据传输**: ~$10/月（预估）
+
+**总计**: ~$102/月
+
+## 🔒 安全最佳实践
+
+1. **网络隔离**: 
+   - 数据库位于私有子网，无互联网访问
+   - 应用位于私有子网，通过 NAT Gateway 访问互联网
+
+2. **安全组规则**:
+   - ALB: 仅开放 80/443 端口
+   - ECS: 仅接受来自 ALB 的 3000 端口流量
+   - RDS: 仅接受来自 ECS 的 5432 端口流量
+
+3. **加密和证书**:
+   - SSL/TLS 强制 HTTPS
+   - RDS 存储加密
+   - 数据库密码复杂化
+
+4. **访问控制**:
+   - 最小权限原则
+   - 资源标签管理
+   - IAM 角色分离
+
+## 🔧 环境配置
+
+### 默认配置
+```bash
+AWS_REGION="ap-southeast-1"
+AWS_ACCOUNT_ID="442729101249"
+PROJECT_NAME="omnilaze"
+DOMAIN_NAME="backend.omnilaze.co"
+```
+
+### 自定义配置
+```bash
+# 使用不同区域
+export AWS_REGION="us-east-1"
+./infra/aws-infrastructure.sh setup
+
+# 使用不同项目名称
+export PROJECT_NAME="my-project"
+./infra/aws-infrastructure.sh setup
+```
+
+## 🐛 故障排除
 
 ### 常见问题
 
-1. **权限错误**
-   - 确保AWS CLI已配置正确的IAM权限
-   - 检查账号ID是否匹配
+1. **权限不足**
+   ```bash
+   # 检查当前用户权限
+   aws sts get-caller-identity
+   # 确保具有 EC2、RDS、ELB、ACM、ECS 的完整权限
+   ```
 
-2. **资源已存在**
-   - 运行清理脚本删除现有资源
-   - 或修改资源名称避免冲突
+2. **资源已存在冲突**
+   ```bash
+   # 检查现有资源
+   ./infra/aws-infrastructure.sh status
+   # 如需重新创建，先清理
+   ./infra/aws-infrastructure.sh cleanup
+   ```
 
-3. **SSL证书验证失败**
-   - 检查DNS记录是否正确添加
-   - 等待DNS传播（可能需要几分钟）
+3. **SSL 证书验证失败**
+   ```bash
+   # 检查证书状态
+   aws acm list-certificates --region ap-southeast-1
+   # 检查 DNS 记录是否正确添加
+   ```
 
-4. **RDS创建失败**
-   - 检查子网组是否正确创建
-   - 确认安全组配置
+4. **RDS 创建超时**
+   ```bash
+   # RDS 创建通常需要 10-15 分钟
+   # 检查子网组和安全组配置
+   aws rds describe-db-instances --db-instance-identifier omnilaze-postgres
+   ```
 
-### 检查资源状态
+### 调试命令
 ```bash
-# 检查VPC
+# 查看详细状态
+./infra/aws-infrastructure.sh status
+
+# 验证所有组件
+./infra/aws-infrastructure.sh validate
+
+# 检查特定资源
 aws ec2 describe-vpcs --filters "Name=tag:Project,Values=omnilaze"
-
-# 检查RDS实例
 aws rds describe-db-instances --db-instance-identifier omnilaze-postgres
-
-# 检查ALB
 aws elbv2 describe-load-balancers --names omnilaze-alb
-
-# 检查SSL证书
-aws acm list-certificates --region ap-southeast-1
 ```
 
-## 安全最佳实践
+## 📊 监控和维护
 
-1. **网络隔离**: 数据库位于私有子网，无法从互联网直接访问
-2. **安全组**: 最小权限原则，只开放必要端口
-3. **SSL/TLS**: 强制HTTPS，自动重定向HTTP
-4. **密码管理**: 数据库密码存储在AWS Secrets Manager
-5. **加密**: RDS实例启用存储加密
+### 健康检查
+```bash
+# 定期运行验证
+./infra/aws-infrastructure.sh validate
 
-## 下一步
+# 检查 ALB 目标健康状态
+aws elbv2 describe-target-health --target-group-arn [TARGET_GROUP_ARN]
 
-1. 运行基础设施脚本
-2. 配置DNS和SSL证书
-3. 部署应用到ECS
-4. 配置监控和日志
-5. 设置自动扩缩容
+# 检查 RDS 指标
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/RDS \
+  --metric-name CPUUtilization \
+  --dimensions Name=DBInstanceIdentifier,Value=omnilaze-postgres
+```
+
+### 备份策略
+- **RDS 自动备份**: 保留 7 天
+- **快照策略**: 建议每日快照
+- **配置备份**: 定期导出基础设施配置
+
+## 🗑️ 资源清理
+
+### 完整清理
+```bash
+# ⚠️ 这将删除所有数据，操作不可逆
+./infra/aws-infrastructure.sh cleanup
+```
+
+### 选择性清理
+如需保留数据但停止计费资源：
+```bash
+# 停止 ECS 服务
+aws ecs update-service --cluster omnilaze-cluster --service omnilaze-service --desired-count 0
+
+# 停止 RDS 实例（最多停止 7 天）
+aws rds stop-db-instance --db-instance-identifier omnilaze-postgres
+```
+
+## 📝 更新日志
+
+- **v2.0**: 整合所有功能到单个脚本
+- **v1.x**: 分离的多个脚本（已废弃）
+
+## 🔗 相关文档
+
+- [AWS ECS 最佳实践](https://docs.aws.amazon.com/ecs/latest/bestpracticesguide/)
+- [AWS RDS 安全最佳实践](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_BestPractices.html)
+- [Application Load Balancer 用户指南](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/)
 
 ---
 
-**注意**: 本指南基于ap-southeast-1区域。如需其他区域，请修改脚本中的AWS_REGION变量。
+💡 **提示**: 使用 `./infra/aws-infrastructure.sh help` 查看所有可用命令和选项。

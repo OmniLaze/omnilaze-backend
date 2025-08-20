@@ -9,17 +9,7 @@ export declare class AuthController {
         success: boolean;
         code: string;
         message: string;
-        data: {
-            dev_code: string;
-            sent: boolean;
-            bizId?: undefined;
-            requestId?: undefined;
-        } | {
-            sent: boolean;
-            bizId: string;
-            requestId: string;
-            dev_code?: undefined;
-        };
+        data: any;
     }>;
     login(body: LoginWithPhoneDto): Promise<{
         success: boolean;

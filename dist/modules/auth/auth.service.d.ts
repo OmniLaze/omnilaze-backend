@@ -6,6 +6,14 @@ export declare class AuthService {
      * 创建传统阿里云短信客户端
      */
     private createSmsClient;
+    /**
+     * 尝试通过SPUG_URL发送验证码
+     */
+    private sendViaSPUG;
+    /**
+     * 尝试通过阿里云发送验证码（备用方案）
+     */
+    private sendViaAliyun;
     sendVerificationCode(phoneNumber: string): Promise<{
         success: boolean;
         message: string;
@@ -13,21 +21,7 @@ export declare class AuthService {
     } | {
         success: boolean;
         message: string;
-        data: {
-            dev_code: string;
-            sent: boolean;
-            bizId?: undefined;
-            requestId?: undefined;
-        };
-    } | {
-        success: boolean;
-        message: string;
-        data: {
-            sent: boolean;
-            bizId: string;
-            requestId: string;
-            dev_code?: undefined;
-        };
+        data: any;
     }>;
     loginWithPhone(phoneNumber: string, verificationCode: string): Promise<{
         success: boolean;

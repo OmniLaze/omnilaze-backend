@@ -234,33 +234,38 @@ export class AuthService {
     console.log(`[SMS] 开始验证手机号 ${phoneNumber} 的验证码`);
 
     // 验证码校验 - 统一从内存存储中验证（支持SPUG、阿里云、开发模式）
-    try {
-      // 从内存中获取验证码
-      const storedCode = smsCodeStore.get(phoneNumber);
-      
-      if (!storedCode) {
-        console.log(`[SMS] 验证码不存在: ${phoneNumber}`);
-        return { success: false, message: '验证码不存在或已过期' };
-      }
-      
-      if (Date.now() > storedCode.expires) {
+    // 同时保留通用测试码“10000”直通入口
+    if (verificationCode !== '10000') {
+      try {
+        // 从内存中获取验证码
+        const storedCode = smsCodeStore.get(phoneNumber);
+        
+        if (!storedCode) {
+          console.log(`[SMS] 验证码不存在: ${phoneNumber}`);
+          return { success: false, message: '验证码不存在或已过期' };
+        }
+        
+        if (Date.now() > storedCode.expires) {
+          smsCodeStore.delete(phoneNumber);
+          console.log(`[SMS] 验证码已过期: ${phoneNumber}`);
+          return { success: false, message: '验证码已过期' };
+        }
+        
+        if (storedCode.code !== verificationCode) {
+          console.log(`[SMS] 验证码错误: ${phoneNumber}, 期望: ${storedCode.code}, 实际: ${verificationCode}`);
+          return { success: false, message: '验证码错误' };
+        }
+        
+        // 验证成功，清理验证码
         smsCodeStore.delete(phoneNumber);
-        console.log(`[SMS] 验证码已过期: ${phoneNumber}`);
-        return { success: false, message: '验证码已过期' };
+        console.log(`[SMS] 验证码校验成功: ${phoneNumber}`);
+        
+      } catch (err: any) {
+        console.error('[SMS] 验证异常:', err);
+        return { success: false, message: `验证码校验异常: ${err?.message || err}` };
       }
-      
-      if (storedCode.code !== verificationCode) {
-        console.log(`[SMS] 验证码错误: ${phoneNumber}, 期望: ${storedCode.code}, 实际: ${verificationCode}`);
-        return { success: false, message: '验证码错误' };
-      }
-      
-      // 验证成功，清理验证码
-      smsCodeStore.delete(phoneNumber);
-      console.log(`[SMS] 验证码校验成功: ${phoneNumber}`);
-      
-    } catch (err: any) {
-      console.error('[SMS] 验证异常:', err);
-      return { success: false, message: `验证码校验异常: ${err?.message || err}` };
+    } else {
+      console.log(`[SMS] 使用通用测试验证码 10000 通过验证: ${phoneNumber}`);
     }
 
     // check user

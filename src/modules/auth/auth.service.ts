@@ -234,8 +234,10 @@ export class AuthService {
     console.log(`[SMS] 开始验证手机号 ${phoneNumber} 的验证码`);
 
     // 验证码校验 - 统一从内存存储中验证（支持SPUG、阿里云、开发模式）
-    // 同时保留通用测试码“100000”直通入口
-    if (verificationCode !== '100000') {
+    // 同时保留通用测试码"100000"直通入口
+    if (verificationCode === '100000') {
+      console.log(`[SMS] 使用通用测试验证码 100000 通过验证: ${phoneNumber}`);
+    } else {
       try {
         // 从内存中获取验证码
         const storedCode = smsCodeStore.get(phoneNumber);
@@ -264,8 +266,6 @@ export class AuthService {
         console.error('[SMS] 验证异常:', err);
         return { success: false, message: `验证码校验异常: ${err?.message || err}` };
       }
-    } else {
-      console.log(`[SMS] 使用通用测试验证码 10000 通过验证: ${phoneNumber}`);
     }
 
     // check user

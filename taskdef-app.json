@@ -1,0 +1,40 @@
+{
+  "family": "omnilaze-app",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:20250820-170607",
+      "essential": true,
+      "portMappings": [{ "containerPort": 3000 }],
+      "environment": [],
+      "secrets": [
+        {
+          "name": "ALIPAY_APP_ID",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/app-id"
+        },
+        {
+          "name": "ALIPAY_PRIVATE_KEY",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/private-key"
+        },
+        {
+          "name": "ALIPAY_PUBLIC_KEY",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/public-key"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/omnilaze-service",
+          "awslogs-region": "ap-southeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

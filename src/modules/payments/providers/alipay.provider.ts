@@ -14,12 +14,20 @@ export class AlipayProvider {
     const alipayPublicKey = process.env.ALIPAY_PUBLIC_KEY;
     const gateway = process.env.ALIPAY_GATEWAY || 'https://openapi.alipay.com/gateway.do';
     
-    if (!appId || !privateKey || !alipayPublicKey) {
-      this.logger.error('Alipay credentials are not set');
-      throw new Error('Alipay credentials are not configured');
+    // Enhanced credential validation with detailed logging
+    const missingCredentials = [];
+    if (!appId) missingCredentials.push('ALIPAY_APP_ID');
+    if (!privateKey) missingCredentials.push('ALIPAY_PRIVATE_KEY');
+    if (!alipayPublicKey) missingCredentials.push('ALIPAY_PUBLIC_KEY');
+    
+    if (missingCredentials.length > 0) {
+      this.logger.error(`Alipay credentials missing: ${missingCredentials.join(', ')}`);
+      this.logger.error('Please check environment variables or SSM Parameter Store configuration');
+      throw new Error(`Alipay credentials are not configured: missing ${missingCredentials.join(', ')}`);
     }
 
-    // 初始化支付宝SDK
+    try {
+      // 初始化支付宝SDK
       this.sdk = new AlipaySdk({
         appId,
         privateKey,
@@ -32,9 +40,13 @@ export class AlipayProvider {
         signType: 'RSA2',
         keyType: 'PKCS8', // 默认PKCS8格式私钥
       });
-    
-    this.logger.log('Alipay SDK initialized successfully');
-    return this.sdk;
+      
+      this.logger.log(`Alipay SDK initialized successfully with App ID: ${appId.substring(0, 6)}***`);
+      return this.sdk;
+    } catch (error) {
+      this.logger.error('Failed to initialize Alipay SDK:', error);
+      throw new Error(`Alipay SDK initialization failed: ${error.message}`);
+    }
   }
 
   /**

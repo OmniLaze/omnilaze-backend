@@ -3,6 +3,7 @@ import { PrismaService } from '../../db/prisma.service';
 import { AlipayProvider } from './providers/alipay.provider';
 import { WechatPayProvider } from './providers/wechatpay.provider';
 import { Request } from 'express';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class PaymentsService {
@@ -12,6 +13,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly alipay: AlipayProvider,
     private readonly wechatPay: WechatPayProvider,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async createPayment(
@@ -180,6 +182,8 @@ export class PaymentsService {
         this.prisma.order.update({ where: { id: payment.orderId }, data: { paymentStatus: 'paid', paidAt: new Date(), paymentId: payment.id } }),
         this.prisma.paymentEvent.create({ data: { paymentId: payment.id, eventType: 'notify', payload: data } }),
       ]);
+      // fire and forget notification
+      this.notifications?.dispatchOrderPaid?.(payment.orderId).catch?.(() => {});
       return true;
     }
     // other statuses can be handled as needed
@@ -249,6 +253,7 @@ export class PaymentsService {
           }
         })
       ]);
+      this.notifications?.dispatchOrderPaid?.(payment.orderId).catch?.(() => {});
       
       this.logger.log(`WeChat payment succeeded for order: ${payment.orderId}`);
       return true;
@@ -345,6 +350,7 @@ export class PaymentsService {
               }
             })
           ]);
+          this.notifications?.dispatchOrderPaid?.(payment.orderId).catch?.(() => {});
           
           return {
             success: true,
@@ -411,6 +417,7 @@ export class PaymentsService {
               }
             })
           ]);
+          this.notifications?.dispatchOrderPaid?.(payment.orderId).catch?.(() => {});
           
           return {
             success: true,

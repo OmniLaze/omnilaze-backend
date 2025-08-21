@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard';
 import { PrismaService } from '../../db/prisma.service';
+import { NotificationsService, NotificationConfig } from '../notifications/notifications.service';
 
 @Controller('/v1/admin')
 export class AdminController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly notifications: NotificationsService) {}
   @Post('/aws/deploy')
   @UseGuards(AdminOrSystemKeyGuard)
   async triggerDeploy(@Body() body: { ref?: string; inputs?: Record<string, any> }) {
@@ -151,5 +152,21 @@ export class AdminController {
     });
     const total = await this.prisma.invitation.count();
     return { success: true, code: 'OK', data: { items, total, page: Number(page), limit: take } };
+  }
+
+  // ===== Notifications config (admin) =====
+  @Get('/notifications/config')
+  @UseGuards(AdminOrSystemKeyGuard)
+  async getNotificationsConfig() {
+    const cfg = await this.notifications.getConfig()
+    return { success: true, code: 'OK', data: cfg }
+  }
+
+  @Put('/notifications/config')
+  @UseGuards(AdminOrSystemKeyGuard)
+  async setNotificationsConfig(@Body() body: { config: NotificationConfig }) {
+    if (!body?.config) return { success: false, code: 'INVALID', message: 'Missing config' }
+    await this.notifications.setConfig(body.config)
+    return { success: true, code: 'OK' }
   }
 }

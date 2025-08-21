@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
 import { PrismaService } from '../../db/prisma.service'
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
-import { AdminGuard } from '../../common/guards/admin.guard'
+import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard'
 
 @Controller('/v1/admin')
-@UseGuards(JwtAuthGuard, AdminGuard)
+// Align with orders/payments endpoints: allow either Admin JWT or valid X-System-Key
+@UseGuards(AdminOrSystemKeyGuard)
 export class AdminInviteCodesController {
   constructor(private readonly prisma: PrismaService) {}
 

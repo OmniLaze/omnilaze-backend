@@ -4,6 +4,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiConsumes, ApiBearerAuth
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { SystemKeyGuard } from '../../common/guards/system-key.guard';
+import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import { CurrentUser, CurrentUserId } from '../../common/decorators/current-user.decorator';
 import { CreateOrderDto, SubmitOrderDto, OrderFeedbackDto, ImportArrivalImageDto, ImportArrivalImageByNumberDto, VoiceFeedbackDto } from './dto/orders.dto';
@@ -136,7 +137,7 @@ export class OrdersController {
   }
 
   @Post('/admin/orders/:orderId/arrival-image/upload')
-  @UseGuards(SystemKeyGuard)
+  @UseGuards(AdminOrSystemKeyGuard)
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
     fileFilter: (req, file, cb) => {
@@ -215,7 +216,7 @@ export class OrdersController {
 
   // Admin: list recent orders across all users (incremental polling)
   @Get('/admin/orders')
-  @UseGuards(SystemKeyGuard)
+  @UseGuards(AdminOrSystemKeyGuard)
   @ApiOperation({ summary: 'Admin list orders', description: 'List recent orders across all users with optional incremental filter' })
   @ApiQuery({ name: 'since', required: false, description: 'Only return orders created after this ISO timestamp' })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by order status' })
@@ -231,7 +232,7 @@ export class OrdersController {
   }
 
   @Get('/admin/orders/:orderId')
-  @UseGuards(SystemKeyGuard)
+  @UseGuards(AdminOrSystemKeyGuard)
   @ApiOperation({ summary: 'Admin get order detail', description: 'Get full order detail including relations' })
   @ApiParam({ name: 'orderId', description: 'Order ID' })
   async adminGetOne(@Param('orderId') orderId: string) {

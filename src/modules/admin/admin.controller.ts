@@ -1,12 +1,12 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
-import { SystemKeyGuard } from '../../common/guards/system-key.guard';
+import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard';
 import { PrismaService } from '../../db/prisma.service';
 
 @Controller('/v1/admin')
 export class AdminController {
   constructor(private readonly prisma: PrismaService) {}
   @Post('/aws/deploy')
-  @UseGuards(SystemKeyGuard)
+  @UseGuards(AdminOrSystemKeyGuard)
   async triggerDeploy(@Body() body: { ref?: string; inputs?: Record<string, any> }) {
     const token = process.env.GITHUB_TOKEN;
     const repo = process.env.GITHUB_REPO; // e.g. "owner/repo"
@@ -41,7 +41,7 @@ export class AdminController {
   }
 
   @Get('/aws/status')
-  @UseGuards(SystemKeyGuard)
+  @UseGuards(AdminOrSystemKeyGuard)
   async getDeployStatus(@Query('per_page') perPage = '1') {
     const token = process.env.GITHUB_TOKEN;
     const repo = process.env.GITHUB_REPO; // e.g. "owner/repo"
@@ -91,7 +91,7 @@ export class AdminController {
 
   // =============== Simple Admin data listing endpoints ===============
   @Get('/users')
-  @UseGuards(SystemKeyGuard)
+  @UseGuards(AdminOrSystemKeyGuard)
   async listUsers(
     @Query('q') q?: string,
     @Query('page') page = '1',
@@ -129,7 +129,7 @@ export class AdminController {
   }
 
   @Get('/invitations')
-  @UseGuards(SystemKeyGuard)
+  @UseGuards(AdminOrSystemKeyGuard)
   async listInvitations(
     @Query('page') page = '1',
     @Query('limit') limit = '50',

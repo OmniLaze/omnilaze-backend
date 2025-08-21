@@ -1,12 +1,12 @@
 import { Controller, Post, Get, Param, Body, UseGuards, Query, HttpException, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { SystemKeyGuard } from '../../common/guards/system-key.guard';
+import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../../db/prisma.service';
 
 @ApiTags('Admin Payments')
 @Controller('/v1/admin/payments')
-@UseGuards(SystemKeyGuard)
+@UseGuards(AdminOrSystemKeyGuard)
 export class AdminPaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,

@@ -1,11 +1,11 @@
 import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AdminUsersService } from './admin.users.service';
-import { SystemKeyGuard } from '../../common/guards/system-key.guard';
+import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard';
 
 @ApiTags('Admin - Users')
 @Controller('/v1/admin/users')
-@UseGuards(SystemKeyGuard)
+@UseGuards(AdminOrSystemKeyGuard)
 export class AdminUsersController {
   constructor(private readonly usersService: AdminUsersService) {}
 

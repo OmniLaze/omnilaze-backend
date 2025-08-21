@@ -1,11 +1,11 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AdminInvitationsService } from './admin.invitations.service';
-import { SystemKeyGuard } from '../../common/guards/system-key.guard';
+import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard';
 
 @ApiTags('Admin - Invitations')
 @Controller('/v1/admin/invitations')
-@UseGuards(SystemKeyGuard)
+@UseGuards(AdminOrSystemKeyGuard)
 export class AdminInvitationsController {
   constructor(private readonly invitationsService: AdminInvitationsService) {}
 

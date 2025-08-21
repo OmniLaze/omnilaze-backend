@@ -14,6 +14,8 @@ const orders_gateway_1 = require("./orders.gateway");
 const config_module_1 = require("../../config/config.module");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const system_key_guard_1 = require("../../common/guards/system-key.guard");
+const admin_guard_1 = require("../../common/guards/admin.guard");
+const admin_or_system_key_guard_1 = require("../../common/guards/admin-or-system-key.guard");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -21,7 +23,7 @@ exports.OrdersModule = OrdersModule = __decorate([
     (0, common_1.Module)({
         imports: [config_module_1.ConfigModule],
         controllers: [orders_controller_1.OrdersController],
-        providers: [orders_service_1.OrdersService, orders_gateway_1.OrdersGateway, jwt_auth_guard_1.JwtAuthGuard, system_key_guard_1.SystemKeyGuard],
+        providers: [orders_service_1.OrdersService, orders_gateway_1.OrdersGateway, jwt_auth_guard_1.JwtAuthGuard, system_key_guard_1.SystemKeyGuard, admin_guard_1.AdminGuard, admin_or_system_key_guard_1.AdminOrSystemKeyGuard],
         exports: [orders_service_1.OrdersService],
     })
 ], OrdersModule);

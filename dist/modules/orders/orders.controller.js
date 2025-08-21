@@ -19,6 +19,7 @@ const swagger_1 = require("@nestjs/swagger");
 const orders_service_1 = require("./orders.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const system_key_guard_1 = require("../../common/guards/system-key.guard");
+const admin_or_system_key_guard_1 = require("../../common/guards/admin-or-system-key.guard");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 const orders_dto_1 = require("./dto/orders.dto");
 let OrdersController = class OrdersController {
@@ -211,7 +212,7 @@ __decorate([
 ], OrdersController.prototype, "importArrivalImageByNumber", null);
 __decorate([
     (0, common_1.Post)('/admin/orders/:orderId/arrival-image/upload'),
-    (0, common_1.UseGuards)(system_key_guard_1.SystemKeyGuard),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
         limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
         fileFilter: (req, file, cb) => {
@@ -272,7 +273,7 @@ __decorate([
 ], OrdersController.prototype, "uploadVoiceFeedback", null);
 __decorate([
     (0, common_1.Get)('/admin/orders'),
-    (0, common_1.UseGuards)(system_key_guard_1.SystemKeyGuard),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
     (0, swagger_1.ApiOperation)({ summary: 'Admin list orders', description: 'List recent orders across all users with optional incremental filter' }),
     (0, swagger_1.ApiQuery)({ name: 'since', required: false, description: 'Only return orders created after this ISO timestamp' }),
     (0, swagger_1.ApiQuery)({ name: 'status', required: false, description: 'Filter by order status' }),
@@ -286,7 +287,7 @@ __decorate([
 ], OrdersController.prototype, "adminList", null);
 __decorate([
     (0, common_1.Get)('/admin/orders/:orderId'),
-    (0, common_1.UseGuards)(system_key_guard_1.SystemKeyGuard),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
     (0, swagger_1.ApiOperation)({ summary: 'Admin get order detail', description: 'Get full order detail including relations' }),
     (0, swagger_1.ApiParam)({ name: 'orderId', description: 'Order ID' }),
     __param(0, (0, common_1.Param)('orderId')),

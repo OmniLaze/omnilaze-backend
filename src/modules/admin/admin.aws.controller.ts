@@ -1,11 +1,11 @@
 import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AdminAwsService } from './admin.aws.service';
-import { SystemKeyGuard } from '../../common/guards/system-key.guard';
+import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard';
 
 @ApiTags('Admin - AWS')
 @Controller('/v1/admin/aws')
-@UseGuards(SystemKeyGuard)
+@UseGuards(AdminOrSystemKeyGuard)
 export class AdminAwsController {
   constructor(private readonly awsService: AdminAwsService) {}
 

@@ -58,7 +58,17 @@ fi
 
 # 提取新的 Task Definition ARN
 TD_ARN=$(jq -r '.taskDefinitionArn // empty' "$TD_FILE" 2>/dev/null)
-if [ -z "$TD_ARN" ]; then
+if [ -z "$TD_ARN" ] || [ "$TD_ARN" = "null" ]; then
+    echo "⚠️  未能从文件中解析 ARN，尝试从 ECS 查询最新修订…"
+    TD_ARN=$(aws ecs list-task-definitions \
+        --family-prefix omnilaze-app \
+        --sort DESC \
+        --max-items 1 \
+        --query 'taskDefinitionArns[0]' \
+        --output text 2>/dev/null | head -n1)
+fi
+
+if [ -z "$TD_ARN" ] || [ "$TD_ARN" = "None" ]; then
     echo "❌ 无法获取 Task Definition ARN"
     exit 1
 fi

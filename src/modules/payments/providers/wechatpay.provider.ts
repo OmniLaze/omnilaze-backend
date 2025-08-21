@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { ConfigService } from '../../../config/config.service';
 
 interface WechatPayConfig {
@@ -49,7 +49,7 @@ interface RefundRequest {
 export class WechatPayProvider {
   private readonly logger = new Logger(WechatPayProvider.name);
   private config: WechatPayConfig;
-  private httpClient: any;
+  private httpClient: AxiosInstance;
 
   constructor(private readonly configService: ConfigService) {
     this.initializeConfig();
@@ -88,7 +88,7 @@ export class WechatPayProvider {
 
     // 请求拦截器 - 添加签名
     this.httpClient.interceptors.request.use(
-      (config: any) => {
+      (config) => {
         const timestamp = Math.floor(Date.now() / 1000).toString();
         const nonce = this.generateNonce();
         const signature = this.generateSignature(
@@ -104,7 +104,7 @@ export class WechatPayProvider {
         
         return config;
       },
-      (error: any) => {
+      (error) => {
         this.logger.error('Request interceptor error:', error);
         return Promise.reject(error);
       }

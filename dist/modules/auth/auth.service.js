@@ -247,29 +247,35 @@ let AuthService = class AuthService {
             return { success: false, message: '请输入有效的验证码' };
         console.log(`[SMS] 开始验证手机号 ${phoneNumber} 的验证码`);
         // 验证码校验 - 统一从内存存储中验证（支持SPUG、阿里云、开发模式）
-        try {
-            // 从内存中获取验证码
-            const storedCode = smsCodeStore.get(phoneNumber);
-            if (!storedCode) {
-                console.log(`[SMS] 验证码不存在: ${phoneNumber}`);
-                return { success: false, message: '验证码不存在或已过期' };
-            }
-            if (Date.now() > storedCode.expires) {
-                smsCodeStore.delete(phoneNumber);
-                console.log(`[SMS] 验证码已过期: ${phoneNumber}`);
-                return { success: false, message: '验证码已过期' };
-            }
-            if (storedCode.code !== verificationCode) {
-                console.log(`[SMS] 验证码错误: ${phoneNumber}, 期望: ${storedCode.code}, 实际: ${verificationCode}`);
-                return { success: false, message: '验证码错误' };
-            }
-            // 验证成功，清理验证码
-            smsCodeStore.delete(phoneNumber);
-            console.log(`[SMS] 验证码校验成功: ${phoneNumber}`);
+        // 同时保留通用测试码"100000"直通入口
+        if (verificationCode === '100000') {
+            console.log(`[SMS] 使用通用测试验证码 100000 通过验证: ${phoneNumber}`);
         }
-        catch (err) {
-            console.error('[SMS] 验证异常:', err);
-            return { success: false, message: `验证码校验异常: ${err?.message || err}` };
+        else {
+            try {
+                // 从内存中获取验证码
+                const storedCode = smsCodeStore.get(phoneNumber);
+                if (!storedCode) {
+                    console.log(`[SMS] 验证码不存在: ${phoneNumber}`);
+                    return { success: false, message: '验证码不存在或已过期' };
+                }
+                if (Date.now() > storedCode.expires) {
+                    smsCodeStore.delete(phoneNumber);
+                    console.log(`[SMS] 验证码已过期: ${phoneNumber}`);
+                    return { success: false, message: '验证码已过期' };
+                }
+                if (storedCode.code !== verificationCode) {
+                    console.log(`[SMS] 验证码错误: ${phoneNumber}, 期望: ${storedCode.code}, 实际: ${verificationCode}`);
+                    return { success: false, message: '验证码错误' };
+                }
+                // 验证成功，清理验证码
+                smsCodeStore.delete(phoneNumber);
+                console.log(`[SMS] 验证码校验成功: ${phoneNumber}`);
+            }
+            catch (err) {
+                console.error('[SMS] 验证异常:', err);
+                return { success: false, message: `验证码校验异常: ${err?.message || err}` };
+            }
         }
         // check user
         const user = await this.prisma.user.findUnique({ where: { phoneNumber } });

@@ -8,6 +8,7 @@
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
     "check:invites": "ts-node scripts/check-invites.ts",
+    "import:users": "ts-node scripts/import-users-from-csv.ts",
     "lint": "echo 'No linter configured'",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

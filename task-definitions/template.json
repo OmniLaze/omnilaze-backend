@@ -41,6 +41,14 @@
           "valueFrom": "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/omnilaze/ENVIRONMENT/CORS_ORIGINS"
         },
         {
+          "name": "ADMIN_USERNAME",
+          "valueFrom": "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/omnilaze/ENVIRONMENT/ADMIN_USERNAME"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "valueFrom": "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/omnilaze/ENVIRONMENT/ADMIN_PASSWORD"
+        },
+        {
           "name": "SYSTEM_API_KEY",
           "valueFrom": "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/omnilaze/ENVIRONMENT/SYSTEM_API_KEY"
         },

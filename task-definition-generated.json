@@ -9,7 +9,7 @@
   "containerDefinitions": [
     {
       "name": "app",
-      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:7f899ae",
+      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:8f69fc01cc68ef87d232c1bcbee74423cf3815e8",
       "essential": true,
       "portMappings": [
         {
@@ -39,6 +39,14 @@
         {
           "name": "CORS_ORIGINS",
           "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/CORS_ORIGINS"
+        },
+        {
+          "name": "ADMIN_USERNAME",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/ADMIN_USERNAME"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/ADMIN_PASSWORD"
         },
         {
           "name": "SYSTEM_API_KEY",

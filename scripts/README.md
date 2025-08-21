@@ -98,6 +98,18 @@ export DATABASE_URL="postgresql://..."
 export SYSTEM_API_KEY="your-system-api-key"
 ```
 
+### 管理后台登录凭证
+为启用 Nexus 管理后台登录，需在 SSM 配置以下参数（生产建议使用 SecureString）：
+
+```bash
+# 设置管理员用户名/密码（示例）
+./scripts/manage-ssm-config.sh set ADMIN_USERNAME "admin"
+./scripts/manage-ssm-config.sh set ADMIN_PASSWORD "strong-password" SecureString
+
+# 变更后重新生成 Task Definition 并更新服务
+./scripts/generate-task-definition.sh <IMAGE_URI>
+```
+
 ### SSM 配置管理
 ```bash
 # 设置环境（影响参数路径前缀）

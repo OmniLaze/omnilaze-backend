@@ -260,8 +260,10 @@ export class AlipayProvider {
           gmt_refund_pay: result.gmt_refund_pay,
         };
       }
-      
-      throw new Error(result?.msg || 'Refund failed');
+      // Surface detailed error info from Alipay
+      const detail = [result?.sub_msg, result?.msg].filter(Boolean).join(' | ')
+      const code = result?.sub_code || result?.code || 'UNKNOWN'
+      throw new Error(`${detail || 'Refund failed'} [${code}]`);
     } catch (error: any) {
       this.logger.error('Failed to refund order:', error);
       throw new Error(`Failed to refund: ${error.message}`);

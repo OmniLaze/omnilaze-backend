@@ -511,7 +511,13 @@ export class PaymentsService {
       return { success: false, message: '该支付已全额退款' };
     }
     // 退款金额默认为剩余全额
-    const actualRefundAmount = refundAmount || remaining;
+    let actualRefundAmount = refundAmount ?? remaining;
+    // 前置校验：不得超过可退余额
+    if (actualRefundAmount > remaining + 1e-6) {
+      return { success: false, message: '退款金额超出可退余额' };
+    }
+    // 规范化到两位小数，避免网关因精度报错
+    actualRefundAmount = Math.round(actualRefundAmount * 100) / 100;
     
     if (actualRefundAmount > remaining) {
       return { success: false, message: `退款金额不能超过剩余可退金额（¥${remaining.toFixed(2)}）` };

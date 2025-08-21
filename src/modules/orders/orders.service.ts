@@ -124,6 +124,8 @@ export class OrdersService {
         deliveryTime: true,
         dietaryRestrictions: true,
         foodPreferences: true,
+        paymentStatus: true,
+        paidAt: true,
         user: { select: { userSequence: true } },
       },
     });
@@ -139,10 +141,27 @@ export class OrdersService {
       deliveryTime: r.deliveryTime,
       dietaryRestrictions: r.dietaryRestrictions,
       foodPreferences: r.foodPreferences,
+      paymentStatus: (r as any).paymentStatus,
+      paidAt: (r as any).paidAt,
       userSequence: r.user?.userSequence ?? null,
     }));
     const next_since = items.length > 0 ? new Date(items[0].createdAt).toISOString() : params.since || null;
     return { items, next_since };
+  }
+
+  async adminUpdateOrderStatus(orderId: string, status: string) {
+    const allowed = new Set(['draft','submitted','processing','delivering','completed','cancelled']);
+    if (!allowed.has(status)) {
+      return { success: false, message: '无效的订单状态' };
+    }
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) return { success: false, message: '订单不存在' };
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status, updatedAt: new Date() },
+    });
+    return { success: true, message: '状态已更新', data: { id: updated.id, status: updated.status } };
   }
 
   async adminGetOrderDetail(orderId: string) {

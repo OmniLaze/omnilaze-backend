@@ -136,6 +136,19 @@ export class OrdersController {
     return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message, data: res.data };
   }
 
+  // Admin alias: import arrival image by URL
+  @Post('/admin/orders/:orderId/arrival-image/import')
+  @UseGuards(AdminOrSystemKeyGuard)
+  @ApiOperation({ summary: 'Admin import arrival image', description: 'Import arrival image for an order by URL (admin only)' })
+  @ApiParam({ name: 'orderId', description: 'Order ID' })
+  async adminImportArrivalImage(
+    @Param('orderId') orderId: string,
+    @Body() body: ImportArrivalImageDto,
+  ) {
+    const res = await this.orders.importArrivalImage(orderId, body);
+    return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message, data: res.data };
+  }
+
   @Post('/admin/orders/:orderId/arrival-image/upload')
   @UseGuards(AdminOrSystemKeyGuard)
   @UseInterceptors(FileInterceptor('file', {
@@ -239,5 +252,19 @@ export class OrdersController {
     const res = await this.orders.adminGetOrderDetail(orderId);
     if (!res) return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
     return { success: true, code: 'OK', data: res };
+  }
+
+  @Post('/admin/orders/:orderId/status')
+  @UseGuards(AdminOrSystemKeyGuard)
+  @ApiOperation({ summary: 'Admin update order status', description: 'Update order status for given order' })
+  @ApiParam({ name: 'orderId', description: 'Order ID' })
+  async adminUpdateStatus(
+    @Param('orderId') orderId: string,
+    @Body() body: { status?: string },
+  ) {
+    const status = (body?.status || '').trim();
+    if (!status) return { success: false, code: 'INVALID', message: '状态不能为空' };
+    const result = await this.orders.adminUpdateOrderStatus(orderId, status);
+    return { success: result.success, code: result.success ? 'OK' : 'ERROR', message: result.message, data: result.data };
   }
 }

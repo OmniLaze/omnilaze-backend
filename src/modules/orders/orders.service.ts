@@ -176,6 +176,9 @@ export class OrdersService {
     const payments = await this.prisma.payment.findMany({
       where: { orderId: order.id },
       orderBy: { createdAt: 'desc' },
+      include: {
+        events: { orderBy: { createdAt: 'desc' } },
+      },
     });
     return {
       ...order,

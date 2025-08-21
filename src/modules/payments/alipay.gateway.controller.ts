@@ -172,12 +172,13 @@ export class AlipayGatewayController {
       // Process based on trade status
       if (params.trade_status === 'TRADE_SUCCESS' || params.trade_status === 'TRADE_FINISHED') {
         // Update payment status
+        const paidTime = params.gmt_payment || params.send_pay_date || params.notify_time
         await this.prisma.payment.update({
           where: { id: payment.id },
           data: {
             status: 'paid',
             transactionId: params.trade_no,
-            paidAt: new Date(),
+            paidAt: paidTime ? new Date(paidTime) : new Date(),
             updatedAt: new Date(),
           },
         });
@@ -187,6 +188,7 @@ export class AlipayGatewayController {
           where: { id: payment.orderId },
           data: {
             paymentStatus: 'paid',
+            paidAt: paidTime ? new Date(paidTime) : new Date(),
             updatedAt: new Date(),
           },
         });

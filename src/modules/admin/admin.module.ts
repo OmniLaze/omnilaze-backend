@@ -10,6 +10,7 @@ import { AdminInvitationsService } from './admin.invitations.service';
 import { AdminAwsController } from './admin.aws.controller';
 import { AdminAwsService } from './admin.aws.service';
 import { AdminPaymentsController } from './admin.payments.controller';
+import { AdminInviteCodesController } from './admin.invite-codes.controller';
 import { PaymentsModule } from '../payments/payments.module';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
@@ -25,6 +26,7 @@ import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.g
     AdminInvitationsController,
     AdminAwsController,
     AdminPaymentsController,
+    AdminInviteCodesController,
   ],
   providers: [
     AdminUsersService,

@@ -1,0 +1,95 @@
+{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:ap-southeast-1:442729101249:task-definition/omnilaze-app:92",
+        "containerDefinitions": [
+            {
+                "name": "app",
+                "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:abd4dccb0d2e820aba4a931e6da7b9ee9905b4ec",
+                "cpu": 0,
+                "portMappings": [
+                    {
+                        "containerPort": 3000,
+                        "hostPort": 3000,
+                        "protocol": "tcp"
+                    }
+                ],
+                "essential": true,
+                "environment": [],
+                "mountPoints": [],
+                "volumesFrom": [],
+                "secrets": [
+                    {
+                        "name": "ALIPAY_APP_ID",
+                        "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/app-id"
+                    },
+                    {
+                        "name": "ALIPAY_PRIVATE_KEY",
+                        "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/private-key"
+                    },
+                    {
+                        "name": "ALIPAY_PUBLIC_KEY",
+                        "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/public-key"
+                    }
+                ],
+                "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                        "awslogs-group": "/ecs/omnilaze-service",
+                        "awslogs-region": "ap-southeast-1",
+                        "awslogs-stream-prefix": "ecs"
+                    }
+                },
+                "systemControls": []
+            }
+        ],
+        "family": "omnilaze-app",
+        "taskRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+        "executionRoleArn": "arn:aws:iam::442729101249:role/ecsTaskExecutionRole",
+        "networkMode": "awsvpc",
+        "revision": 92,
+        "volumes": [],
+        "status": "ACTIVE",
+        "requiresAttributes": [
+            {
+                "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+            },
+            {
+                "name": "ecs.capability.execution-role-awslogs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.ecr-auth"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.task-iam-role"
+            },
+            {
+                "name": "ecs.capability.execution-role-ecr-pull"
+            },
+            {
+                "name": "ecs.capability.secrets.ssm.environment-variables"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+            },
+            {
+                "name": "ecs.capability.task-eni"
+            }
+        ],
+        "placementConstraints": [],
+        "compatibilities": [
+            "EC2",
+            "FARGATE"
+        ],
+        "requiresCompatibilities": [
+            "FARGATE"
+        ],
+        "cpu": "256",
+        "memory": "512",
+        "registeredAt": "2025-08-22T13:29:23.608000+08:00",
+        "registeredBy": "arn:aws:sts::442729101249:assumed-role/omnilaze/GitHubActions"
+    },
+    "tags": []
+}

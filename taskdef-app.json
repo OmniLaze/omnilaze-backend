@@ -9,7 +9,7 @@
   "containerDefinitions": [
     {
       "name": "app",
-      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:20250822-092547",
+      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:20250822-132742",
       "essential": true,
       "portMappings": [{ "containerPort": 3000 }],
       "environment": [],

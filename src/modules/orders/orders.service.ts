@@ -120,22 +120,9 @@ export class OrdersService {
       where,
       orderBy: { createdAt: 'desc' },
       take: params.limit,
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        createdAt: true,
-        deliveryAddress: true,
-        budgetAmount: true,
-        arrivalImageUrl: true,
-        phoneNumber: true,
-        deliveryTime: true,
-        dietaryRestrictions: true,
-        foodPreferences: true,
-        paymentStatus: true,
-        paidAt: true,
-        metadata: true,
+      include: {
         user: { select: { userSequence: true } },
+        feedbacks: { orderBy: { createdAt: 'desc' }, take: 1, select: { rating: true, comment: true, createdAt: true } },
       },
     });
     const items = rows.map((r) => ({
@@ -154,7 +141,10 @@ export class OrdersService {
       paidAt: (r as any).paidAt,
       etaEstimatedAt: (r as any)?.metadata?.eta_estimated_at || null,
       etaSource: (r as any)?.metadata?.eta_source || null,
-      userSequence: r.user?.userSequence ?? null,
+      userSequence: (r as any).user?.userSequence ?? null,
+      latestFeedbackRating: (r as any).feedbacks?.[0]?.rating ?? null,
+      latestFeedbackComment: (r as any).feedbacks?.[0]?.comment ?? null,
+      latestFeedbackAt: (r as any).feedbacks?.[0]?.createdAt ?? null,
     }));
     const next_since = items.length > 0 ? new Date(items[0].createdAt).toISOString() : params.since || null;
     return { items, next_since };

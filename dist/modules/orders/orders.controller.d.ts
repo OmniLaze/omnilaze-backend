@@ -125,6 +125,16 @@ export declare class OrdersController {
             source: string;
         };
     }>;
+    adminImportArrivalImage(orderId: string, body: ImportArrivalImageDto): Promise<{
+        success: boolean;
+        code: string;
+        message: string;
+        data: {
+            arrival_image_url: string;
+            taken_at: Date;
+            source: string;
+        };
+    }>;
     adminUploadArrivalImage(orderId: string, file: Express.Multer.File): Promise<{
         success: boolean;
         code: string;
@@ -184,6 +194,8 @@ export declare class OrdersController {
                 deliveryTime: string;
                 dietaryRestrictions: string;
                 foodPreferences: string;
+                paymentStatus: any;
+                paidAt: any;
                 userSequence: number;
             }[];
             next_since: string;
@@ -198,7 +210,9 @@ export declare class OrdersController {
         success: boolean;
         code: string;
         data: {
-            payments: {
+            payments: ({
+                events: never;
+            } & {
                 id: string;
                 status: string;
                 createdAt: Date;
@@ -216,7 +230,7 @@ export declare class OrdersController {
                 qrCode: string | null;
                 idempotencyKey: string | null;
                 refundedAt: Date | null;
-            }[];
+            })[];
             feedbacks: {
                 id: string;
                 createdAt: Date;
@@ -252,5 +266,21 @@ export declare class OrdersController {
             userId: string;
         };
         message?: undefined;
+    }>;
+    adminUpdateStatus(orderId: string, body: {
+        status?: string;
+    }): Promise<{
+        success: boolean;
+        code: string;
+        message: string;
+        data?: undefined;
+    } | {
+        success: boolean;
+        code: string;
+        message: string;
+        data: {
+            id: string;
+            status: string;
+        };
     }>;
 }

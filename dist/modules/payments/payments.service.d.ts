@@ -2,12 +2,14 @@ import { PrismaService } from '../../db/prisma.service';
 import { AlipayProvider } from './providers/alipay.provider';
 import { WechatPayProvider } from './providers/wechatpay.provider';
 import { Request } from 'express';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class PaymentsService {
     private readonly prisma;
     private readonly alipay;
     private readonly wechatPay;
+    private readonly notifications;
     private readonly logger;
-    constructor(prisma: PrismaService, alipay: AlipayProvider, wechatPay: WechatPayProvider);
+    constructor(prisma: PrismaService, alipay: AlipayProvider, wechatPay: WechatPayProvider, notifications: NotificationsService);
     createPayment(orderId: string, provider: 'alipay' | 'wechatpay', amount: number, idempotencyKey?: string, currentUserId?: string, paymentMethod?: 'h5' | 'jsapi' | 'native'): Promise<{
         success: boolean;
         message: string;

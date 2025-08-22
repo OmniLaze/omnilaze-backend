@@ -16,12 +16,13 @@ const wechatpay_provider_1 = require("./providers/wechatpay.provider");
 const config_module_1 = require("../../config/config.module");
 const prisma_module_1 = require("../../db/prisma.module");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const notifications_module_1 = require("../notifications/notifications.module");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
 exports.PaymentsModule = PaymentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [config_module_1.ConfigModule, prisma_module_1.PrismaModule],
+        imports: [config_module_1.ConfigModule, prisma_module_1.PrismaModule, notifications_module_1.NotificationsModule],
         controllers: [payments_controller_1.PaymentsController, alipay_gateway_controller_1.AlipayGatewayController],
         providers: [payments_service_1.PaymentsService, alipay_provider_1.AlipayProvider, wechatpay_provider_1.WechatPayProvider, jwt_auth_guard_1.JwtAuthGuard],
         exports: [payments_service_1.PaymentsService],

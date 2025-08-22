@@ -130,12 +130,28 @@ export declare class OrdersService {
             deliveryTime: string;
             dietaryRestrictions: string;
             foodPreferences: string;
+            paymentStatus: any;
+            paidAt: any;
             userSequence: number;
         }[];
         next_since: string;
     }>;
+    adminUpdateOrderStatus(orderId: string, status: string): Promise<{
+        success: boolean;
+        message: string;
+        data?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        data: {
+            id: string;
+            status: string;
+        };
+    }>;
     adminGetOrderDetail(orderId: string): Promise<{
-        payments: {
+        payments: ({
+            events: never;
+        } & {
             id: string;
             status: string;
             createdAt: Date;
@@ -153,7 +169,7 @@ export declare class OrdersService {
             qrCode: string | null;
             idempotencyKey: string | null;
             refundedAt: Date | null;
-        }[];
+        })[];
         feedbacks: {
             id: string;
             createdAt: Date;

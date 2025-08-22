@@ -63,6 +63,11 @@ let OrdersController = class OrdersController {
         const res = await this.orders.importArrivalImageByNumber(body);
         return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message, data: res.data };
     }
+    // Admin alias: import arrival image by URL
+    async adminImportArrivalImage(orderId, body) {
+        const res = await this.orders.importArrivalImage(orderId, body);
+        return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message, data: res.data };
+    }
     async adminUploadArrivalImage(orderId, file) {
         if (!file)
             return { success: false, code: 'ERROR', message: '图片文件不能为空' };
@@ -101,6 +106,13 @@ let OrdersController = class OrdersController {
         if (!res)
             return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
         return { success: true, code: 'OK', data: res };
+    }
+    async adminUpdateStatus(orderId, body) {
+        const status = (body?.status || '').trim();
+        if (!status)
+            return { success: false, code: 'INVALID', message: '状态不能为空' };
+        const result = await this.orders.adminUpdateOrderStatus(orderId, status);
+        return { success: result.success, code: result.success ? 'OK' : 'ERROR', message: result.message, data: result.data };
     }
 };
 exports.OrdersController = OrdersController;
@@ -211,6 +223,17 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "importArrivalImageByNumber", null);
 __decorate([
+    (0, common_1.Post)('/admin/orders/:orderId/arrival-image/import'),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
+    (0, swagger_1.ApiOperation)({ summary: 'Admin import arrival image', description: 'Import arrival image for an order by URL (admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'orderId', description: 'Order ID' }),
+    __param(0, (0, common_1.Param)('orderId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, orders_dto_1.ImportArrivalImageDto]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "adminImportArrivalImage", null);
+__decorate([
     (0, common_1.Post)('/admin/orders/:orderId/arrival-image/upload'),
     (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
@@ -295,6 +318,17 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "adminGetOne", null);
+__decorate([
+    (0, common_1.Post)('/admin/orders/:orderId/status'),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
+    (0, swagger_1.ApiOperation)({ summary: 'Admin update order status', description: 'Update order status for given order' }),
+    (0, swagger_1.ApiParam)({ name: 'orderId', description: 'Order ID' }),
+    __param(0, (0, common_1.Param)('orderId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "adminUpdateStatus", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, swagger_1.ApiTags)('Orders'),
     (0, common_1.Controller)('/v1'),

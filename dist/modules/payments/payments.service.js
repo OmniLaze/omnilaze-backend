@@ -15,11 +15,13 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../db/prisma.service");
 const alipay_provider_1 = require("./providers/alipay.provider");
 const wechatpay_provider_1 = require("./providers/wechatpay.provider");
+const notifications_service_1 = require("../notifications/notifications.service");
 let PaymentsService = PaymentsService_1 = class PaymentsService {
-    constructor(prisma, alipay, wechatPay) {
+    constructor(prisma, alipay, wechatPay, notifications) {
         this.prisma = prisma;
         this.alipay = alipay;
         this.wechatPay = wechatPay;
+        this.notifications = notifications;
         this.logger = new common_1.Logger(PaymentsService_1.name);
     }
     async createPayment(orderId, provider, amount, idempotencyKey, currentUserId, paymentMethod) {
@@ -181,6 +183,8 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 this.prisma.order.update({ where: { id: payment.orderId }, data: { paymentStatus: 'paid', paidAt: new Date(), paymentId: payment.id } }),
                 this.prisma.paymentEvent.create({ data: { paymentId: payment.id, eventType: 'notify', payload: data } }),
             ]);
+            // fire and forget notification
+            this.notifications?.dispatchOrderPaid?.(payment.orderId).catch?.(() => { });
             return true;
         }
         // other statuses can be handled as needed
@@ -243,6 +247,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                     }
                 })
             ]);
+            this.notifications?.dispatchOrderPaid?.(payment.orderId).catch?.(() => { });
             this.logger.log(`WeChat payment succeeded for order: ${payment.orderId}`);
             return true;
         }
@@ -327,6 +332,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                             }
                         })
                     ]);
+                    this.notifications?.dispatchOrderPaid?.(payment.orderId).catch?.(() => { });
                     return {
                         success: true,
                         data: {
@@ -388,6 +394,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                             }
                         })
                     ]);
+                    this.notifications?.dispatchOrderPaid?.(payment.orderId).catch?.(() => { });
                     return {
                         success: true,
                         data: {
@@ -476,7 +483,13 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             return { success: false, message: '该支付已全额退款' };
         }
         // 退款金额默认为剩余全额
-        const actualRefundAmount = refundAmount || remaining;
+        let actualRefundAmount = refundAmount ?? remaining;
+        // 前置校验：不得超过可退余额
+        if (actualRefundAmount > remaining + 1e-6) {
+            return { success: false, message: '退款金额超出可退余额' };
+        }
+        // 规范化到两位小数，避免网关因精度报错
+        actualRefundAmount = Math.round(actualRefundAmount * 100) / 100;
         if (actualRefundAmount > remaining) {
             return { success: false, message: `退款金额不能超过剩余可退金额（¥${remaining.toFixed(2)}）` };
         }
@@ -638,6 +651,7 @@ exports.PaymentsService = PaymentsService = PaymentsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         alipay_provider_1.AlipayProvider,
-        wechatpay_provider_1.WechatPayProvider])
+        wechatpay_provider_1.WechatPayProvider,
+        notifications_service_1.NotificationsService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map

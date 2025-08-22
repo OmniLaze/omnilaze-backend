@@ -18,6 +18,7 @@ const invites_module_1 = require("./modules/invites/invites.module");
 const payments_module_1 = require("./modules/payments/payments.module");
 const app_controller_1 = require("./app.controller");
 const admin_module_1 = require("./modules/admin/admin.module");
+const notifications_module_1 = require("./modules/notifications/notifications.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -33,6 +34,7 @@ exports.AppModule = AppModule = __decorate([
             invites_module_1.InvitesModule,
             payments_module_1.PaymentsModule,
             admin_module_1.AdminModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [app_controller_1.AppController],
     })

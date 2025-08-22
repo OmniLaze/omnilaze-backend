@@ -123,6 +123,7 @@ export class OrdersService {
       include: {
         user: { select: { userSequence: true } },
         feedbacks: { orderBy: { createdAt: 'desc' }, take: 1, select: { rating: true, comment: true, createdAt: true } },
+        _count: { select: { voiceFeedbacks: true } },
       },
     });
     const items = rows.map((r) => ({
@@ -145,6 +146,7 @@ export class OrdersService {
       latestFeedbackRating: (r as any).feedbacks?.[0]?.rating ?? null,
       latestFeedbackComment: (r as any).feedbacks?.[0]?.comment ?? null,
       latestFeedbackAt: (r as any).feedbacks?.[0]?.createdAt ?? null,
+      voiceFeedbackCount: (r as any)?._count?.voiceFeedbacks ?? 0,
     }));
     const next_since = items.length > 0 ? new Date(items[0].createdAt).toISOString() : params.since || null;
     return { items, next_since };
@@ -171,6 +173,7 @@ export class OrdersService {
       where: { id: orderId },
       include: {
         feedbacks: { orderBy: { createdAt: 'desc' } },
+        voiceFeedbacks: { orderBy: { createdAt: 'desc' } },
       },
     });
     if (!order) return null;

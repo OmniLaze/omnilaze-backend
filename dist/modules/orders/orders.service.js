@@ -134,22 +134,10 @@ let OrdersService = class OrdersService {
             where,
             orderBy: { createdAt: 'desc' },
             take: params.limit,
-            select: {
-                id: true,
-                orderNumber: true,
-                status: true,
-                createdAt: true,
-                deliveryAddress: true,
-                budgetAmount: true,
-                arrivalImageUrl: true,
-                phoneNumber: true,
-                deliveryTime: true,
-                dietaryRestrictions: true,
-                foodPreferences: true,
-                paymentStatus: true,
-                paidAt: true,
-                metadata: true,
+            include: {
                 user: { select: { userSequence: true } },
+                feedbacks: { orderBy: { createdAt: 'desc' }, take: 1, select: { rating: true, comment: true, createdAt: true } },
+                _count: { select: { voiceFeedbacks: true } },
             },
         });
         const items = rows.map((r) => ({
@@ -169,6 +157,10 @@ let OrdersService = class OrdersService {
             etaEstimatedAt: r?.metadata?.eta_estimated_at || null,
             etaSource: r?.metadata?.eta_source || null,
             userSequence: r.user?.userSequence ?? null,
+            latestFeedbackRating: r.feedbacks?.[0]?.rating ?? null,
+            latestFeedbackComment: r.feedbacks?.[0]?.comment ?? null,
+            latestFeedbackAt: r.feedbacks?.[0]?.createdAt ?? null,
+            voiceFeedbackCount: r?._count?.voiceFeedbacks ?? 0,
         }));
         const next_since = items.length > 0 ? new Date(items[0].createdAt).toISOString() : params.since || null;
         return { items, next_since };
@@ -194,6 +186,7 @@ let OrdersService = class OrdersService {
             where: { id: orderId },
             include: {
                 feedbacks: { orderBy: { createdAt: 'desc' } },
+                voiceFeedbacks: { orderBy: { createdAt: 'desc' } },
             },
         });
         if (!order)
@@ -201,9 +194,6 @@ let OrdersService = class OrdersService {
         const payments = await this.prisma.payment.findMany({
             where: { orderId: order.id },
             orderBy: { createdAt: 'desc' },
-            include: {
-                events: { orderBy: { createdAt: 'desc' } },
-            },
         });
         return {
             ...order,

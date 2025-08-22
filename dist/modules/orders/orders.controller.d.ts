@@ -202,7 +202,11 @@ export declare class OrdersController {
                 paidAt: any;
                 etaEstimatedAt: any;
                 etaSource: any;
-                userSequence: number;
+                userSequence: any;
+                latestFeedbackRating: any;
+                latestFeedbackComment: any;
+                latestFeedbackAt: any;
+                voiceFeedbackCount: any;
             }[];
             next_since: string;
         };
@@ -218,9 +222,7 @@ export declare class OrdersController {
         data: {
             etaEstimatedAt: any;
             etaSource: any;
-            payments: ({
-                events: never;
-            } & {
+            payments: {
                 id: string;
                 status: string;
                 createdAt: Date;
@@ -238,7 +240,7 @@ export declare class OrdersController {
                 qrCode: string | null;
                 idempotencyKey: string | null;
                 refundedAt: Date | null;
-            })[];
+            }[];
             feedbacks: {
                 id: string;
                 createdAt: Date;
@@ -246,6 +248,15 @@ export declare class OrdersController {
                 rating: number;
                 comment: string | null;
                 orderId: string;
+            }[];
+            voiceFeedbacks: {
+                id: string;
+                createdAt: Date;
+                userId: string;
+                orderId: string;
+                audioUrl: string;
+                durationSec: number | null;
+                transcript: string | null;
             }[];
             id: string;
             orderNumber: string;

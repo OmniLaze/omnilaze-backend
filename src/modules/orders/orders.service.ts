@@ -1,6 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../db/prisma.service';
 
+// 统一的订单状态计算函数
+function calculateDisplayStatus(order: any): string {
+  // 有到达图片 = 已完成
+  if (order.arrivalImageUrl) return 'completed';
+  
+  // 已支付
+  if (order.paymentStatus === 'paid' || order.paidAt) {
+    // Nexus设置了配送中
+    if (order.status === 'delivering') return 'delivering';
+    // 否则显示已支付
+    return 'paid';
+  }
+  
+  // 未支付（包括 draft, submitted, processing 等所有支付前状态）
+  return 'unpaid';
+}
+
+// 添加displayStatus到订单对象
+function enhanceOrderWithDisplayStatus(order: any) {
+  return {
+    ...order,
+    displayStatus: calculateDisplayStatus(order)
+  };
+}
+
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -73,8 +98,8 @@ export class OrdersService {
       },
     });
     
-    // Include arrival image URL in response
-    const ordersWithImages = orders.map(order => ({
+    // Include arrival image URL and displayStatus in response
+    const ordersWithEnhancedData = orders.map(order => enhanceOrderWithDisplayStatus({
       ...order,
       arrivalImageUrl: order.arrivalImageUrl,
       arrivalImageTakenAt: order.arrivalImageTakenAt,
@@ -84,7 +109,7 @@ export class OrdersService {
       etaSource: (order as any)?.metadata?.eta_source || null,
     }));
     
-    return { success: true, message: 'OK', data: { orders: ordersWithImages, count: orders.length } };
+    return { success: true, message: 'OK', data: { orders: ordersWithEnhancedData, count: orders.length } };
   }
 
   async listOrders(userId: string, filters: { status?: string }, paging: { page: number; pageSize: number }) {
@@ -95,7 +120,7 @@ export class OrdersService {
       this.prisma.order.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: paging.pageSize }),
       this.prisma.order.count({ where }),
     ]);
-    const mapped = items.map((order) => ({
+    const mapped = items.map((order) => enhanceOrderWithDisplayStatus({
       ...order,
       etaEstimatedAt: (order as any)?.metadata?.eta_estimated_at || null,
       etaSource: (order as any)?.metadata?.eta_source || null,
@@ -126,33 +151,37 @@ export class OrdersService {
         _count: { select: { voiceFeedbacks: true } },
       },
     });
-    const items = rows.map((r) => ({
-      id: r.id,
-      orderNumber: r.orderNumber,
-      status: r.status,
-      createdAt: r.createdAt,
-      deliveryAddress: r.deliveryAddress,
-      budgetAmount: r.budgetAmount,
-      arrivalImageUrl: r.arrivalImageUrl,
-      phoneNumber: r.phoneNumber,
-      deliveryTime: r.deliveryTime,
-      dietaryRestrictions: r.dietaryRestrictions,
-      foodPreferences: r.foodPreferences,
-      paymentStatus: (r as any).paymentStatus,
-      paidAt: (r as any).paidAt,
-      etaEstimatedAt: (r as any)?.metadata?.eta_estimated_at || null,
-      etaSource: (r as any)?.metadata?.eta_source || null,
-      userSequence: (r as any).user?.userSequence ?? null,
-      latestFeedbackRating: (r as any).feedbacks?.[0]?.rating ?? null,
-      latestFeedbackComment: (r as any).feedbacks?.[0]?.comment ?? null,
-      latestFeedbackAt: (r as any).feedbacks?.[0]?.createdAt ?? null,
-      voiceFeedbackCount: (r as any)?._count?.voiceFeedbacks ?? 0,
-    }));
+    const items = rows.map((r) => {
+      const baseOrder = {
+        id: r.id,
+        orderNumber: r.orderNumber,
+        status: r.status,
+        createdAt: r.createdAt,
+        deliveryAddress: r.deliveryAddress,
+        budgetAmount: r.budgetAmount,
+        arrivalImageUrl: r.arrivalImageUrl,
+        phoneNumber: r.phoneNumber,
+        deliveryTime: r.deliveryTime,
+        dietaryRestrictions: r.dietaryRestrictions,
+        foodPreferences: r.foodPreferences,
+        paymentStatus: (r as any).paymentStatus,
+        paidAt: (r as any).paidAt,
+        etaEstimatedAt: (r as any)?.metadata?.eta_estimated_at || null,
+        etaSource: (r as any)?.metadata?.eta_source || null,
+        userSequence: (r as any).user?.userSequence ?? null,
+        latestFeedbackRating: (r as any).feedbacks?.[0]?.rating ?? null,
+        latestFeedbackComment: (r as any).feedbacks?.[0]?.comment ?? null,
+        latestFeedbackAt: (r as any).feedbacks?.[0]?.createdAt ?? null,
+        voiceFeedbackCount: (r as any)?._count?.voiceFeedbacks ?? 0,
+      };
+      return enhanceOrderWithDisplayStatus(baseOrder);
+    });
     const next_since = items.length > 0 ? new Date(items[0].createdAt).toISOString() : params.since || null;
     return { items, next_since };
   }
 
   async adminUpdateOrderStatus(orderId: string, status: string) {
+    // 保持向后兼容，允许所有原有状态
     const allowed = new Set(['draft','submitted','processing','delivering','completed','cancelled']);
     if (!allowed.has(status)) {
       return { success: false, message: '无效的订单状态' };
@@ -164,7 +193,14 @@ export class OrdersService {
       where: { id: orderId },
       data: { status, updatedAt: new Date() },
     });
-    return { success: true, message: '状态已更新', data: { id: updated.id, status: updated.status } };
+    
+    // 返回包含displayStatus的数据
+    const enhancedOrder = enhanceOrderWithDisplayStatus(updated);
+    return { success: true, message: '状态已更新', data: { 
+      id: enhancedOrder.id, 
+      status: enhancedOrder.status,
+      displayStatus: enhancedOrder.displayStatus 
+    } };
   }
 
   async adminGetOrderDetail(orderId: string) {
@@ -181,12 +217,14 @@ export class OrdersService {
       where: { orderId: order.id },
       orderBy: { createdAt: 'desc' },
     });
-    return {
+    
+    // 增强订单数据，包含displayStatus
+    return enhanceOrderWithDisplayStatus({
       ...order,
       etaEstimatedAt: (order as any)?.metadata?.eta_estimated_at || null,
       etaSource: (order as any)?.metadata?.eta_source || null,
       payments,
-    };
+    });
   }
 
   async updateOrderEta(orderId: string, etaIso?: string | null, source?: string | null) {

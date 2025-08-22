@@ -6,7 +6,7 @@
     "containerDefinitions": [
         {
             "name": "app",
-            "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:20250822-132742",
+            "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:20250822-140000",
             "cpu": 0,
             "portMappings": [
                 {
@@ -32,36 +32,48 @@
             ],
             "secrets": [
                 {
+                    "name": "DATABASE_URL",
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/DATABASE_URL"
+                },
+                {
+                    "name": "CORS_ORIGINS",
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/CORS_ORIGINS"
+                },
+                {
+                    "name": "JWT_SECRET",
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/JWT_SECRET"
+                },
+                {
                     "name": "ALIPAY_APP_ID",
-                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/app-id"
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/ALIPAY_APP_ID"
                 },
                 {
                     "name": "ALIPAY_PRIVATE_KEY",
-                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/private-key"
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/ALIPAY_PRIVATE_KEY"
                 },
                 {
                     "name": "ALIPAY_PUBLIC_KEY",
-                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/public-key"
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/ALIPAY_PUBLIC_KEY"
                 },
                 {
                     "name": "ALIYUN_ACCESS_KEY_ID",
-                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/aliyun/access-key-id"
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/ALIYUN_ACCESS_KEY_ID"
                 },
                 {
                     "name": "ALIYUN_ACCESS_KEY_SECRET",
-                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/aliyun/access-key-secret"
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/ALIYUN_ACCESS_KEY_SECRET"
                 },
                 {
                     "name": "ALIYUN_SMS_SIGN_NAME",
-                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/aliyun/sms-sign-name"
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/ALIYUN_SMS_SIGN_NAME"
                 },
                 {
                     "name": "ALIYUN_SMS_TEMPLATE_CODE",
-                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/aliyun/sms-template-code"
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/ALIYUN_SMS_TEMPLATE_CODE"
                 },
                 {
                     "name": "ALIYUN_REGION_ID",
-                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/aliyun/region-id"
+                    "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/ALIYUN_REGION_ID"
                 }
             ],
             "logConfiguration": {

@@ -9,22 +9,42 @@
   "containerDefinitions": [
     {
       "name": "app",
-      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:20250822-132742",
+      "image": "442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:20250822-145440",
       "essential": true,
       "portMappings": [{ "containerPort": 3000 }],
-      "environment": [],
+      "environment": [{"name": "CORS_ORIGINS", "value": "[\"https://order.omnilaze.co\",\"https://omnilaze.co\",\"https://www.omnilaze.co\",\"http://localhost:8081\",\"http://localhost:3000\"]"}],
       "secrets": [
         {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/DATABASE_URL"
+        },
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/JWT_SECRET"
+        },
+        {
+          "name": "SYSTEM_API_KEY",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/SYSTEM_API_KEY"
+        },
+        {
+          "name": "ALIYUN_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/ALIYUN_ACCESS_KEY_ID"
+        },
+        {
+          "name": "ALIYUN_ACCESS_KEY_SECRET",
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/ALIYUN_ACCESS_KEY_SECRET"
+        },
+        {
           "name": "ALIPAY_APP_ID",
-          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/app-id"
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/ALIPAY_APP_ID"
         },
         {
           "name": "ALIPAY_PRIVATE_KEY",
-          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/private-key"
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/ALIPAY_PRIVATE_KEY"
         },
         {
           "name": "ALIPAY_PUBLIC_KEY",
-          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/alipay/public-key"
+          "valueFrom": "arn:aws:ssm:ap-southeast-1:442729101249:parameter/omnilaze/prod/ALIPAY_PUBLIC_KEY"
         }
       ],
       "logConfiguration": {

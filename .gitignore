@@ -4,3 +4,4 @@
 node_modules/
 dist/
 *.log
+scripts/setup-ssm-config.sh

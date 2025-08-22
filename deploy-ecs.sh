@@ -3,6 +3,7 @@ set -euo pipefail
 
 # ====== 可配置变量（可通过环境变量覆盖） ======
 REGION=${AWS_REGION:-"ap-southeast-1"}
+ENV=${ENVIRONMENT:-"prod"}
 REPO=${ECR_REPOSITORY:-"omnilaze-backend"}
 CLUSTER=${ECS_CLUSTER:-"omnilaze-cluster"}
 SERVICE=${ECS_SERVICE:-"omnilaze-service"}
@@ -44,7 +45,7 @@ ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.$ECR_DOMAIN_SUFFIX/$REPO"
 TAG=${IMAGE_TAG:-$(date +%Y%m%d-%H%M%S)}
 IMAGE="$ECR_URI:$TAG"
 aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$ACCOUNT_ID.dkr.ecr.$REGION.$ECR_DOMAIN_SUFFIX"
-docker build -t "$IMAGE" .
+docker build --platform linux/amd64 -t "$IMAGE" .
 docker push "$IMAGE"
 echo "✅ 镜像已推送: $IMAGE"
 
@@ -111,16 +112,36 @@ cat > taskdef-app.json <<JSON
       "environment": $ENV_JSON,
       "secrets": [
         {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/$ENV/DATABASE_URL"
+        },
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/$ENV/JWT_SECRET"
+        },
+        {
+          "name": "SYSTEM_API_KEY",
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/$ENV/SYSTEM_API_KEY"
+        },
+        {
+          "name": "ALIYUN_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/$ENV/ALIYUN_ACCESS_KEY_ID"
+        },
+        {
+          "name": "ALIYUN_ACCESS_KEY_SECRET",
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/$ENV/ALIYUN_ACCESS_KEY_SECRET"
+        },
+        {
           "name": "ALIPAY_APP_ID",
-          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/alipay/app-id"
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/$ENV/ALIPAY_APP_ID"
         },
         {
           "name": "ALIPAY_PRIVATE_KEY",
-          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/alipay/private-key"
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/$ENV/ALIPAY_PRIVATE_KEY"
         },
         {
           "name": "ALIPAY_PUBLIC_KEY",
-          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/alipay/public-key"
+          "valueFrom": "arn:aws:ssm:$REGION:$ACCOUNT_ID:parameter/omnilaze/$ENV/ALIPAY_PUBLIC_KEY"
         }
       ],
       "logConfiguration": {

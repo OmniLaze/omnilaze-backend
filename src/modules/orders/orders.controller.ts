@@ -267,4 +267,33 @@ export class OrdersController {
     const result = await this.orders.adminUpdateOrderStatus(orderId, status);
     return { success: result.success, code: result.success ? 'OK' : 'ERROR', message: result.message, data: result.data };
   }
+
+  @Post('/admin/orders/:orderId/eta')
+  @UseGuards(AdminOrSystemKeyGuard)
+  @ApiOperation({ summary: 'Admin update order ETA', description: 'Update ETA (estimated arrival time) for an order' })
+  @ApiParam({ name: 'orderId', description: 'Order ID' })
+  async adminUpdateEta(
+    @Param('orderId') orderId: string,
+    @Body() body: { eta_at?: string; minutes?: number; source?: string },
+  ) {
+    let etaIso = body.eta_at || undefined;
+    if (!etaIso && typeof body.minutes === 'number') {
+      const base = new Date();
+      etaIso = new Date(base.getTime() + Math.max(0, body.minutes) * 60 * 1000).toISOString();
+    }
+    const result = await this.orders.updateOrderEta(orderId, etaIso, body.source);
+    return { success: result.success, code: result.success ? 'OK' : 'ERROR', message: result.message, data: result.data };
+  }
+
+  @Get('/orders/:orderId/eta')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user order ETA', description: 'Get ETA for a specific order (user-owned)' })
+  async getEta(
+    @CurrentUserId() userId: string,
+    @Param('orderId') orderId: string,
+  ) {
+    const res = await this.orders.getUserOrderEta(orderId, userId);
+    return { success: res.success, code: res.success ? 'OK' : 'ERROR', data: res.data, message: res.message };
+  }
 }

@@ -33,6 +33,8 @@ export declare class OrdersController {
                 arrivalImageUrl: string;
                 arrivalImageTakenAt: Date;
                 arrivalImageSource: string;
+                etaEstimatedAt: any;
+                etaSource: any;
                 feedbacks: {
                     id: string;
                     createdAt: Date;
@@ -73,6 +75,8 @@ export declare class OrdersController {
         code: string;
         data: {
             items: {
+                etaEstimatedAt: any;
+                etaSource: any;
                 id: string;
                 orderNumber: string;
                 phoneNumber: string;
@@ -196,6 +200,8 @@ export declare class OrdersController {
                 foodPreferences: string;
                 paymentStatus: any;
                 paidAt: any;
+                etaEstimatedAt: any;
+                etaSource: any;
                 userSequence: number;
             }[];
             next_since: string;
@@ -210,6 +216,8 @@ export declare class OrdersController {
         success: boolean;
         code: string;
         data: {
+            etaEstimatedAt: any;
+            etaSource: any;
             payments: ({
                 events: never;
             } & {
@@ -282,5 +290,27 @@ export declare class OrdersController {
             id: string;
             status: string;
         };
+    }>;
+    adminUpdateEta(orderId: string, body: {
+        eta_at?: string;
+        minutes?: number;
+        source?: string;
+    }): Promise<{
+        success: boolean;
+        code: string;
+        message: string;
+        data: {
+            eta_estimated_at: any;
+            eta_source: any;
+        };
+    }>;
+    getEta(userId: string, orderId: string): Promise<{
+        success: boolean;
+        code: string;
+        data: {
+            eta_estimated_at: any;
+            eta_source: any;
+        };
+        message: string;
     }>;
 }

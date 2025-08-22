@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
-import axios, { AxiosInstance } from 'axios';
+import axios from 'axios';
 import { ConfigService } from '../../../config/config.service';
 
 interface WechatPayConfig {
@@ -49,7 +49,7 @@ interface RefundRequest {
 export class WechatPayProvider {
   private readonly logger = new Logger(WechatPayProvider.name);
   private config: WechatPayConfig;
-  private httpClient: AxiosInstance;
+  private httpClient: ReturnType<typeof axios.create>;
 
   constructor(private readonly configService: ConfigService) {
     this.initializeConfig();
@@ -181,9 +181,10 @@ export class WechatPayProvider {
 
       const response = await this.httpClient.post('/v3/pay/transactions/h5', data);
       
-      if (response.data && response.data.h5_url) {
+      const respData: any = response?.data as any;
+      if (respData && respData.h5_url) {
         this.logger.log(`H5 payment created: ${request.outTradeNo}`);
-        return { h5_url: response.data.h5_url };
+        return { h5_url: respData.h5_url };
       }
       
       throw new Error('Invalid response from WeChat Pay');
@@ -215,9 +216,10 @@ export class WechatPayProvider {
 
       const response = await this.httpClient.post('/v3/pay/transactions/jsapi', data);
       
-      if (response.data && response.data.prepay_id) {
+      const respData: any = response?.data as any;
+      if (respData && respData.prepay_id) {
         this.logger.log(`JSAPI payment created: ${request.outTradeNo}`);
-        return { prepay_id: response.data.prepay_id };
+        return { prepay_id: respData.prepay_id };
       }
       
       throw new Error('Invalid response from WeChat Pay');
@@ -235,8 +237,9 @@ export class WechatPayProvider {
       const url = `/v3/pay/transactions/out-trade-no/${outTradeNo}?mchid=${this.config.mchId}`;
       const response = await this.httpClient.get(url);
       
-      this.logger.log(`Order query result for ${outTradeNo}: ${response.data.trade_state}`);
-      return response.data;
+      const respData: any = response?.data as any;
+      this.logger.log(`Order query result for ${outTradeNo}: ${respData?.trade_state}`);
+      return respData;
     } catch (error: any) {
       this.logger.error('Order query failed:', error.response?.data || error.message);
       throw new Error(`Failed to query order: ${error.message}`);

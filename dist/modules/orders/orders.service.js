@@ -94,6 +94,9 @@ let OrdersService = class OrdersService {
             arrivalImageUrl: order.arrivalImageUrl,
             arrivalImageTakenAt: order.arrivalImageTakenAt,
             arrivalImageSource: order.arrivalImageSource,
+            // derive ETA from metadata if present
+            etaEstimatedAt: order?.metadata?.eta_estimated_at || null,
+            etaSource: order?.metadata?.eta_source || null,
         }));
         return { success: true, message: 'OK', data: { orders: ordersWithImages, count: orders.length } };
     }
@@ -106,7 +109,12 @@ let OrdersService = class OrdersService {
             this.prisma.order.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: paging.pageSize }),
             this.prisma.order.count({ where }),
         ]);
-        return { items, page: paging.page, page_size: paging.pageSize, total };
+        const mapped = items.map((order) => ({
+            ...order,
+            etaEstimatedAt: order?.metadata?.eta_estimated_at || null,
+            etaSource: order?.metadata?.eta_source || null,
+        }));
+        return { items: mapped, page: paging.page, page_size: paging.pageSize, total };
     }
     generateOrderNumber() {
         const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -140,6 +148,7 @@ let OrdersService = class OrdersService {
                 foodPreferences: true,
                 paymentStatus: true,
                 paidAt: true,
+                metadata: true,
                 user: { select: { userSequence: true } },
             },
         });
@@ -157,6 +166,8 @@ let OrdersService = class OrdersService {
             foodPreferences: r.foodPreferences,
             paymentStatus: r.paymentStatus,
             paidAt: r.paidAt,
+            etaEstimatedAt: r?.metadata?.eta_estimated_at || null,
+            etaSource: r?.metadata?.eta_source || null,
             userSequence: r.user?.userSequence ?? null,
         }));
         const next_since = items.length > 0 ? new Date(items[0].createdAt).toISOString() : params.since || null;
@@ -196,8 +207,41 @@ let OrdersService = class OrdersService {
         });
         return {
             ...order,
+            etaEstimatedAt: order?.metadata?.eta_estimated_at || null,
+            etaSource: order?.metadata?.eta_source || null,
             payments,
         };
+    }
+    async updateOrderEta(orderId, etaIso, source) {
+        if (!orderId)
+            return { success: false, message: '订单ID不能为空' };
+        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+        if (!order)
+            return { success: false, message: '订单不存在' };
+        const nextMeta = { ...order.metadata };
+        if (etaIso) {
+            const dt = new Date(etaIso);
+            if (isNaN(dt.getTime()))
+                return { success: false, message: 'ETA时间格式无效' };
+            nextMeta.eta_estimated_at = dt.toISOString();
+        }
+        else {
+            delete nextMeta.eta_estimated_at;
+        }
+        if (source !== undefined)
+            nextMeta.eta_source = source || null;
+        await this.prisma.order.update({ where: { id: orderId }, data: { metadata: nextMeta, updatedAt: new Date() } });
+        return { success: true, message: 'ETA已更新', data: { eta_estimated_at: nextMeta.eta_estimated_at || null, eta_source: nextMeta.eta_source || null } };
+    }
+    async getUserOrderEta(orderId, userId) {
+        if (!orderId || !userId)
+            return { success: false, message: '参数错误' };
+        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+        if (!order)
+            return { success: false, message: '订单不存在' };
+        if (order.userId !== userId)
+            return { success: false, message: '您无权查看此订单' };
+        return { success: true, data: { eta_estimated_at: order?.metadata?.eta_estimated_at || null, eta_source: order?.metadata?.eta_source || null } };
     }
     async importArrivalImage(orderId, data) {
         if (!orderId)

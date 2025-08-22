@@ -41,6 +41,8 @@ export declare class OrdersService {
                 arrivalImageUrl: string;
                 arrivalImageTakenAt: Date;
                 arrivalImageSource: string;
+                etaEstimatedAt: any;
+                etaSource: any;
                 feedbacks: {
                     id: string;
                     createdAt: Date;
@@ -82,6 +84,8 @@ export declare class OrdersService {
         pageSize: number;
     }): Promise<{
         items: {
+            etaEstimatedAt: any;
+            etaSource: any;
             id: string;
             orderNumber: string;
             phoneNumber: string;
@@ -132,6 +136,8 @@ export declare class OrdersService {
             foodPreferences: string;
             paymentStatus: any;
             paidAt: any;
+            etaEstimatedAt: any;
+            etaSource: any;
             userSequence: number;
         }[];
         next_since: string;
@@ -149,6 +155,8 @@ export declare class OrdersService {
         };
     }>;
     adminGetOrderDetail(orderId: string): Promise<{
+        etaEstimatedAt: any;
+        etaSource: any;
         payments: ({
             events: never;
         } & {
@@ -203,6 +211,30 @@ export declare class OrdersService {
         arrivalImageTakenAt: Date | null;
         arrivalImageImportedAt: Date | null;
         userId: string;
+    }>;
+    updateOrderEta(orderId: string, etaIso?: string | null, source?: string | null): Promise<{
+        success: boolean;
+        message: string;
+        data?: undefined;
+    } | {
+        success: boolean;
+        message: string;
+        data: {
+            eta_estimated_at: any;
+            eta_source: any;
+        };
+    }>;
+    getUserOrderEta(orderId: string, userId: string): Promise<{
+        success: boolean;
+        message: string;
+        data?: undefined;
+    } | {
+        success: boolean;
+        data: {
+            eta_estimated_at: any;
+            eta_source: any;
+        };
+        message?: undefined;
     }>;
     importArrivalImage(orderId: string, data: {
         image_url: string;

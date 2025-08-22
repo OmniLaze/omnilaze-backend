@@ -114,6 +114,19 @@ let OrdersController = class OrdersController {
         const result = await this.orders.adminUpdateOrderStatus(orderId, status);
         return { success: result.success, code: result.success ? 'OK' : 'ERROR', message: result.message, data: result.data };
     }
+    async adminUpdateEta(orderId, body) {
+        let etaIso = body.eta_at || undefined;
+        if (!etaIso && typeof body.minutes === 'number') {
+            const base = new Date();
+            etaIso = new Date(base.getTime() + Math.max(0, body.minutes) * 60 * 1000).toISOString();
+        }
+        const result = await this.orders.updateOrderEta(orderId, etaIso, body.source);
+        return { success: result.success, code: result.success ? 'OK' : 'ERROR', message: result.message, data: result.data };
+    }
+    async getEta(userId, orderId) {
+        const res = await this.orders.getUserOrderEta(orderId, userId);
+        return { success: res.success, code: res.success ? 'OK' : 'ERROR', data: res.data, message: res.message };
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -329,6 +342,28 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "adminUpdateStatus", null);
+__decorate([
+    (0, common_1.Post)('/admin/orders/:orderId/eta'),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
+    (0, swagger_1.ApiOperation)({ summary: 'Admin update order ETA', description: 'Update ETA (estimated arrival time) for an order' }),
+    (0, swagger_1.ApiParam)({ name: 'orderId', description: 'Order ID' }),
+    __param(0, (0, common_1.Param)('orderId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "adminUpdateEta", null);
+__decorate([
+    (0, common_1.Get)('/orders/:orderId/eta'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Get user order ETA', description: 'Get ETA for a specific order (user-owned)' }),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
+    __param(1, (0, common_1.Param)('orderId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getEta", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, swagger_1.ApiTags)('Orders'),
     (0, common_1.Controller)('/v1'),

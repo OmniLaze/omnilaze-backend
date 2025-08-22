@@ -202,20 +202,9 @@ let AuthService = class AuthService {
         if (!phoneNumber || !/^\d{11}$/.test(phoneNumber)) {
             return { success: false, message: '请输入正确的11位手机号码' };
         }
-        // 优先级：SPUG_URL > Aliyun SMS > 开发模式
+        // 优先级：Aliyun SMS > SPUG_URL > 开发模式
         console.log(`[SMS] 开始为手机号 ${phoneNumber} 发送验证码`);
-        // 1. 尝试SPUG_URL（主要方案）
-        const spugResult = await this.sendViaSPUG(phoneNumber);
-        if (spugResult.success) {
-            console.log(`[SMS] SPUG发送成功: ${phoneNumber}`);
-            return {
-                success: true,
-                message: spugResult.message,
-                data: spugResult.data,
-            };
-        }
-        console.log(`[SMS] SPUG发送失败，尝试备用方案: ${spugResult.message}`);
-        // 2. 尝试阿里云SMS（备用方案）
+        // 1. 尝试阿里云SMS（主要方案）
         const aliyunResult = await this.sendViaAliyun(phoneNumber);
         if (aliyunResult.success) {
             console.log(`[SMS] 阿里云发送成功: ${phoneNumber}`);
@@ -225,7 +214,18 @@ let AuthService = class AuthService {
                 data: aliyunResult.data,
             };
         }
-        console.log(`[SMS] 阿里云发送失败，使用开发模式: ${aliyunResult.message}`);
+        console.log(`[SMS] 阿里云发送失败，尝试SPUG方案: ${aliyunResult.message}`);
+        // 2. 尝试SPUG_URL（备用方案）
+        const spugResult = await this.sendViaSPUG(phoneNumber);
+        if (spugResult.success) {
+            console.log(`[SMS] SPUG发送成功: ${phoneNumber}`);
+            return {
+                success: true,
+                message: spugResult.message,
+                data: spugResult.data,
+            };
+        }
+        console.log(`[SMS] SPUG发送失败，使用开发模式: ${spugResult.message}`);
         // 3. 开发模式回退 - 生成随机验证码便于测试
         const code = Math.random().toString().slice(2, 8); // 生成6位随机验证码
         console.log(`[开发模式] 验证码: ${code} (手机号: ${phoneNumber}) - 请使用此验证码进行登录`);

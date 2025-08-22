@@ -29,43 +29,7 @@ export declare class OrdersController {
         success: boolean;
         code: string;
         data: {
-            orders: {
-                arrivalImageUrl: string;
-                arrivalImageTakenAt: Date;
-                arrivalImageSource: string;
-                etaEstimatedAt: any;
-                etaSource: any;
-                feedbacks: {
-                    id: string;
-                    createdAt: Date;
-                    userId: string;
-                    rating: number;
-                    comment: string | null;
-                    orderId: string;
-                }[];
-                id: string;
-                orderNumber: string;
-                phoneNumber: string;
-                status: string;
-                orderDate: Date;
-                createdAt: Date;
-                submittedAt: Date | null;
-                deliveryAddress: string;
-                deliveryTime: string | null;
-                dietaryRestrictions: string | null;
-                foodPreferences: string | null;
-                budgetAmount: number;
-                budgetCurrency: string;
-                metadata: import("@prisma/client/runtime/library").JsonValue | null;
-                userSequenceNumber: number | null;
-                isDeleted: boolean;
-                updatedAt: Date | null;
-                paymentStatus: string | null;
-                paidAt: Date | null;
-                paymentId: string | null;
-                arrivalImageImportedAt: Date | null;
-                userId: string;
-            }[];
+            orders: any[];
             count: number;
         };
         message: string;
@@ -74,35 +38,7 @@ export declare class OrdersController {
         success: boolean;
         code: string;
         data: {
-            items: {
-                etaEstimatedAt: any;
-                etaSource: any;
-                id: string;
-                orderNumber: string;
-                phoneNumber: string;
-                status: string;
-                orderDate: Date;
-                createdAt: Date;
-                submittedAt: Date | null;
-                deliveryAddress: string;
-                deliveryTime: string | null;
-                dietaryRestrictions: string | null;
-                foodPreferences: string | null;
-                budgetAmount: number;
-                budgetCurrency: string;
-                metadata: import("@prisma/client/runtime/library").JsonValue | null;
-                userSequenceNumber: number | null;
-                isDeleted: boolean;
-                updatedAt: Date | null;
-                paymentStatus: string | null;
-                paidAt: Date | null;
-                paymentId: string | null;
-                arrivalImageUrl: string | null;
-                arrivalImageSource: string | null;
-                arrivalImageTakenAt: Date | null;
-                arrivalImageImportedAt: Date | null;
-                userId: string;
-            }[];
+            items: any[];
             page: number;
             page_size: number;
             total: number;
@@ -186,28 +122,7 @@ export declare class OrdersController {
         success: boolean;
         code: string;
         data: {
-            items: {
-                id: string;
-                orderNumber: string;
-                status: string;
-                createdAt: Date;
-                deliveryAddress: string;
-                budgetAmount: number;
-                arrivalImageUrl: string;
-                phoneNumber: string;
-                deliveryTime: string;
-                dietaryRestrictions: string;
-                foodPreferences: string;
-                paymentStatus: any;
-                paidAt: any;
-                etaEstimatedAt: any;
-                etaSource: any;
-                userSequence: any;
-                latestFeedbackRating: any;
-                latestFeedbackComment: any;
-                latestFeedbackAt: any;
-                voiceFeedbackCount: any;
-            }[];
+            items: any[];
             next_since: string;
         };
     }>;
@@ -219,71 +134,7 @@ export declare class OrdersController {
     } | {
         success: boolean;
         code: string;
-        data: {
-            etaEstimatedAt: any;
-            etaSource: any;
-            payments: {
-                id: string;
-                status: string;
-                createdAt: Date;
-                metadata: import("@prisma/client/runtime/library").JsonValue | null;
-                updatedAt: Date;
-                paidAt: Date | null;
-                orderId: string;
-                provider: string;
-                amount: number;
-                currency: string;
-                subject: string | null;
-                body: string | null;
-                outTradeNo: string;
-                transactionId: string | null;
-                qrCode: string | null;
-                idempotencyKey: string | null;
-                refundedAt: Date | null;
-            }[];
-            feedbacks: {
-                id: string;
-                createdAt: Date;
-                userId: string;
-                rating: number;
-                comment: string | null;
-                orderId: string;
-            }[];
-            voiceFeedbacks: {
-                id: string;
-                createdAt: Date;
-                userId: string;
-                orderId: string;
-                audioUrl: string;
-                durationSec: number | null;
-                transcript: string | null;
-            }[];
-            id: string;
-            orderNumber: string;
-            phoneNumber: string;
-            status: string;
-            orderDate: Date;
-            createdAt: Date;
-            submittedAt: Date | null;
-            deliveryAddress: string;
-            deliveryTime: string | null;
-            dietaryRestrictions: string | null;
-            foodPreferences: string | null;
-            budgetAmount: number;
-            budgetCurrency: string;
-            metadata: import("@prisma/client/runtime/library").JsonValue | null;
-            userSequenceNumber: number | null;
-            isDeleted: boolean;
-            updatedAt: Date | null;
-            paymentStatus: string | null;
-            paidAt: Date | null;
-            paymentId: string | null;
-            arrivalImageUrl: string | null;
-            arrivalImageSource: string | null;
-            arrivalImageTakenAt: Date | null;
-            arrivalImageImportedAt: Date | null;
-            userId: string;
-        };
+        data: any;
         message?: undefined;
     }>;
     adminUpdateStatus(orderId: string, body: {
@@ -298,8 +149,9 @@ export declare class OrdersController {
         code: string;
         message: string;
         data: {
-            id: string;
-            status: string;
+            id: any;
+            status: any;
+            displayStatus: any;
         };
     }>;
     adminUpdateEta(orderId: string, body: {

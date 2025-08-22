@@ -12,6 +12,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../db/prisma.service");
+// 统一的订单状态计算函数
+function calculateDisplayStatus(order) {
+    // 有到达图片 = 已完成
+    if (order.arrivalImageUrl)
+        return 'completed';
+    // 已支付
+    if (order.paymentStatus === 'paid' || order.paidAt) {
+        // Nexus设置了配送中
+        if (order.status === 'delivering')
+            return 'delivering';
+        // 否则显示已支付
+        return 'paid';
+    }
+    // 未支付（包括 draft, submitted, processing 等所有支付前状态）
+    return 'unpaid';
+}
+// 添加displayStatus到订单对象
+function enhanceOrderWithDisplayStatus(order) {
+    return {
+        ...order,
+        displayStatus: calculateDisplayStatus(order)
+    };
+}
 let OrdersService = class OrdersService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -88,8 +111,8 @@ let OrdersService = class OrdersService {
                 },
             },
         });
-        // Include arrival image URL in response
-        const ordersWithImages = orders.map(order => ({
+        // Include arrival image URL and displayStatus in response
+        const ordersWithEnhancedData = orders.map(order => enhanceOrderWithDisplayStatus({
             ...order,
             arrivalImageUrl: order.arrivalImageUrl,
             arrivalImageTakenAt: order.arrivalImageTakenAt,
@@ -98,7 +121,7 @@ let OrdersService = class OrdersService {
             etaEstimatedAt: order?.metadata?.eta_estimated_at || null,
             etaSource: order?.metadata?.eta_source || null,
         }));
-        return { success: true, message: 'OK', data: { orders: ordersWithImages, count: orders.length } };
+        return { success: true, message: 'OK', data: { orders: ordersWithEnhancedData, count: orders.length } };
     }
     async listOrders(userId, filters, paging) {
         const where = { userId, isDeleted: false };
@@ -109,7 +132,7 @@ let OrdersService = class OrdersService {
             this.prisma.order.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: paging.pageSize }),
             this.prisma.order.count({ where }),
         ]);
-        const mapped = items.map((order) => ({
+        const mapped = items.map((order) => enhanceOrderWithDisplayStatus({
             ...order,
             etaEstimatedAt: order?.metadata?.eta_estimated_at || null,
             etaSource: order?.metadata?.eta_source || null,
@@ -140,32 +163,36 @@ let OrdersService = class OrdersService {
                 _count: { select: { voiceFeedbacks: true } },
             },
         });
-        const items = rows.map((r) => ({
-            id: r.id,
-            orderNumber: r.orderNumber,
-            status: r.status,
-            createdAt: r.createdAt,
-            deliveryAddress: r.deliveryAddress,
-            budgetAmount: r.budgetAmount,
-            arrivalImageUrl: r.arrivalImageUrl,
-            phoneNumber: r.phoneNumber,
-            deliveryTime: r.deliveryTime,
-            dietaryRestrictions: r.dietaryRestrictions,
-            foodPreferences: r.foodPreferences,
-            paymentStatus: r.paymentStatus,
-            paidAt: r.paidAt,
-            etaEstimatedAt: r?.metadata?.eta_estimated_at || null,
-            etaSource: r?.metadata?.eta_source || null,
-            userSequence: r.user?.userSequence ?? null,
-            latestFeedbackRating: r.feedbacks?.[0]?.rating ?? null,
-            latestFeedbackComment: r.feedbacks?.[0]?.comment ?? null,
-            latestFeedbackAt: r.feedbacks?.[0]?.createdAt ?? null,
-            voiceFeedbackCount: r?._count?.voiceFeedbacks ?? 0,
-        }));
+        const items = rows.map((r) => {
+            const baseOrder = {
+                id: r.id,
+                orderNumber: r.orderNumber,
+                status: r.status,
+                createdAt: r.createdAt,
+                deliveryAddress: r.deliveryAddress,
+                budgetAmount: r.budgetAmount,
+                arrivalImageUrl: r.arrivalImageUrl,
+                phoneNumber: r.phoneNumber,
+                deliveryTime: r.deliveryTime,
+                dietaryRestrictions: r.dietaryRestrictions,
+                foodPreferences: r.foodPreferences,
+                paymentStatus: r.paymentStatus,
+                paidAt: r.paidAt,
+                etaEstimatedAt: r?.metadata?.eta_estimated_at || null,
+                etaSource: r?.metadata?.eta_source || null,
+                userSequence: r.user?.userSequence ?? null,
+                latestFeedbackRating: r.feedbacks?.[0]?.rating ?? null,
+                latestFeedbackComment: r.feedbacks?.[0]?.comment ?? null,
+                latestFeedbackAt: r.feedbacks?.[0]?.createdAt ?? null,
+                voiceFeedbackCount: r?._count?.voiceFeedbacks ?? 0,
+            };
+            return enhanceOrderWithDisplayStatus(baseOrder);
+        });
         const next_since = items.length > 0 ? new Date(items[0].createdAt).toISOString() : params.since || null;
         return { items, next_since };
     }
     async adminUpdateOrderStatus(orderId, status) {
+        // 保持向后兼容，允许所有原有状态
         const allowed = new Set(['draft', 'submitted', 'processing', 'delivering', 'completed', 'cancelled']);
         if (!allowed.has(status)) {
             return { success: false, message: '无效的订单状态' };
@@ -177,7 +204,13 @@ let OrdersService = class OrdersService {
             where: { id: orderId },
             data: { status, updatedAt: new Date() },
         });
-        return { success: true, message: '状态已更新', data: { id: updated.id, status: updated.status } };
+        // 返回包含displayStatus的数据
+        const enhancedOrder = enhanceOrderWithDisplayStatus(updated);
+        return { success: true, message: '状态已更新', data: {
+                id: enhancedOrder.id,
+                status: enhancedOrder.status,
+                displayStatus: enhancedOrder.displayStatus
+            } };
     }
     async adminGetOrderDetail(orderId) {
         if (!orderId)
@@ -195,12 +228,13 @@ let OrdersService = class OrdersService {
             where: { orderId: order.id },
             orderBy: { createdAt: 'desc' },
         });
-        return {
+        // 增强订单数据，包含displayStatus
+        return enhanceOrderWithDisplayStatus({
             ...order,
             etaEstimatedAt: order?.metadata?.eta_estimated_at || null,
             etaSource: order?.metadata?.eta_source || null,
             payments,
-        };
+        });
     }
     async updateOrderEta(orderId, etaIso, source) {
         if (!orderId)

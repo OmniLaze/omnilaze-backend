@@ -39,29 +39,35 @@ export class AdminPaymentsController {
       where.provider = provider;
     }
     
-    const payments = await (this.prisma.payment as any).findMany({
+    // Note: Prisma schema currently does not define relations on Payment -> Order/Events.
+    // Avoid `include` on non-declared relations to prevent runtime errors.
+    const payments = await this.prisma.payment.findMany({
       where,
-      include: {
-        order: {
-          select: {
-            orderNumber: true,
-            userId: true,
-            deliveryAddress: true,
-            budgetAmount: true,
-          },
-        },
-      },
       take: parseInt(limit || '50'),
       skip: parseInt(offset || '0'),
       orderBy: { createdAt: 'desc' },
-    });
+    } as any);
+
+    // Enrich with minimal order info (best-effort) without relying on relations
+    const orderIds = Array.from(new Set(payments.map((p: any) => p.orderId).filter(Boolean)));
+    const orders = orderIds.length
+      ? await this.prisma.order.findMany({
+          where: { id: { in: orderIds } },
+          select: { id: true, orderNumber: true, userId: true, deliveryAddress: true, budgetAmount: true },
+        })
+      : [];
+    const orderMap = new Map(orders.map((o) => [o.id, o]));
+    const enriched = payments.map((p: any) => ({
+      ...p,
+      order: p.orderId ? orderMap.get(p.orderId) || null : null,
+    }));
     
     const total = await this.prisma.payment.count({ where });
     
     return {
       success: true,
       data: {
-        items: payments,
+        items: enriched,
         total,
         limit: parseInt(limit || '50'),
         offset: parseInt(offset || '0'),
@@ -75,24 +81,19 @@ export class AdminPaymentsController {
   @Get(':paymentId')
   @ApiOperation({ summary: '获取支付详情' })
   async getPaymentDetail(@Param('paymentId') paymentId: string) {
-    const payment = await this.prisma.payment.findUnique({
-      where: { id: paymentId },
-      include: {
-        order: true,
-        events: {
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-    } as any);
+    // Fetch payment, order, and events separately to avoid relation includes
+    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } } as any);
     
     if (!payment) {
       throw new HttpException('支付记录不存在', HttpStatus.NOT_FOUND);
     }
     
-    return {
-      success: true,
-      data: payment,
-    };
+    const [order, events] = await Promise.all([
+      payment?.orderId ? this.prisma.order.findUnique({ where: { id: payment.orderId } }) : Promise.resolve(null),
+      this.prisma.paymentEvent.findMany({ where: { paymentId }, orderBy: { createdAt: 'desc' } } as any),
+    ]);
+
+    return { success: true, data: { ...payment, order, events } };
   }
 
   /**
@@ -171,17 +172,12 @@ export class AdminPaymentsController {
   @Get('order/:orderId')
   @ApiOperation({ summary: '获取订单的所有支付记录' })
   async getOrderPayments(@Param('orderId') orderId: string) {
-    const payments = await (this.prisma.payment as any).findMany({
+    // Do not include events relation (not declared in Prisma schema); fetch plain payments
+    const payments = await this.prisma.payment.findMany({
       where: { orderId },
-      include: {
-        events: {
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        },
-      },
       orderBy: { createdAt: 'desc' },
-    });
-    
+    } as any);
+
     return {
       success: true,
       data: payments,

@@ -28,7 +28,7 @@ fi
 # 替换占位符并生成最终的 Task Definition
 cat "$TEMPLATE_FILE" | \
     sed "s|PLACEHOLDER_IMAGE_URI|$IMAGE_URI|g" | \
-    sed "s/REGION/$REGION/g" | \
+    sed "s/__AWS_REGION__/$REGION/g" | \
     sed "s/ACCOUNT_ID/$ACCOUNT_ID/g" | \
     sed "s/ENVIRONMENT/$ENV/g" > "$OUTPUT_FILE"
 

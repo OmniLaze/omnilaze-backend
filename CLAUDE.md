@@ -16,11 +16,13 @@ This is the `omnilaze-backend` - a NestJS REST API backend service for the OmniL
 - **Common**: `src/common/` - Shared decorators and guards (JWT auth, roles)
 
 ### Feature Modules
-- **Auth Module**: `src/modules/auth/` - JWT-based authentication and user management
+- **Auth Module**: `src/modules/auth/` - JWT-based authentication with Aliyun SMS verification and user management
 - **Orders Module**: `src/modules/orders/` - Order management with WebSocket support via `OrdersGateway`
 - **Preferences Module**: `src/modules/preferences/` - User preference storage and management
 - **Invites Module**: `src/modules/invites/` - Invitation system and referral management
-- **Payments Module**: `src/modules/payments/` - Payment processing with Alipay provider
+- **Payments Module**: `src/modules/payments/` - Payment processing with WeChat Pay and Alipay providers
+- **Admin Module**: `src/modules/admin/` - Administrative endpoints with system key and role-based access
+- **Notifications Module**: `src/modules/notifications/` - Notification management system
 - **Health Module**: `src/modules/health/` - Health check endpoints
 
 ### Database Schema (Prisma)
@@ -76,19 +78,21 @@ npm run start
 npm run start:prod
 ```
 
-### Testing and Quality Assurance
+### Utility Scripts for Data Management
 ```bash
-# No test framework currently configured
-npm run lint  # Currently just echoes "No linter configured"
+# User management from CSV imports  
+npm run import:users  # Import users from CSV file
 
-# Type checking with TypeScript
-npx tsc --noEmit
-
-# Database operations testing
-npm run prisma:studio  # Visual database browser for data verification
-
-# Utility scripts for invite code management
+# Invite code management and verification
 npm run check:invites  # Check invite code status
+./scripts/manage-invites.sh  # Manage invite codes via script
+
+# Task definition generation for AWS ECS deployments
+./scripts/generate-task-definition.sh <IMAGE_URI>  # Generate ECS task definition
+
+# SSM Parameter Store management for environment variables
+./scripts/setup-ssm-config.sh  # Setup AWS SSM parameters
+./scripts/manage-ssm-config.sh  # Manage SSM configuration
 ```
 
 ## Deployment Architecture
@@ -153,9 +157,13 @@ ADMIN_USER_IDS="user_id_1,user_id_2"  # Comma-separated admin user IDs
 
 # Aliyun SMS service (required for SMS verification)
 ALIYUN_ACCESS_KEY_ID="your-aliyun-access-key-id"
-ALIYUN_ACCESS_KEY_SECRET="your-aliyun-access-key-secret"
-ALIYUN_SMS_SIGN_NAME="your-sms-signature"  # SMS signature name
-ALIYUN_SMS_TEMPLATE_CODE="SMS_XXXXXX"     # SMS template code
+ALIYUN_ACCESS_KEY_SECRET="your-aliyun-access-key-secret" 
+ALIYUN_REGION_ID="cn-qingdao"                  # Aliyun region for SMS service
+ALIYUN_SMS_SIGN_NAME="your-sms-signature"      # SMS signature name
+ALIYUN_SMS_TEMPLATE_CODE="SMS_XXXXXX"         # SMS template code
+
+# SPUG notification service (fallback for SMS)
+SPUG_URL="https://push.spug.cc/send/your-token"  # SPUG webhook for notifications
 ```
 
 ### Docker Development
@@ -182,15 +190,21 @@ npm run dev
 
 ## Key Features
 
+### SMS Verification System
+- **Multi-provider Fallback**: Aliyun SMS (primary) → SPUG notifications (fallback) → Development mode
+- **Phone-based Authentication**: 11-digit phone number validation with SMS codes
+- **Development Testing**: Universal test code "100000" for development/testing
+- **Code Expiration**: 5-minute expiration with automatic cleanup
+- **Rate Limiting**: Built into overall API rate limiting (120 req/min per IP)
+
 ### Authentication & Authorization
 - **JWT-based Authentication**: Custom JWT auth guard and roles decorator
-- **Phone-based Registration**: Users authenticate via phone numbers
+- **Phone-based Registration**: Users authenticate via phone numbers with SMS verification
 - **Role-based Access**: User roles with guard-based protection
-- **Invite System**: Referral codes for user onboarding
+- **Invite System**: Referral codes for user onboarding and access control
 - **System Key Guard**: Protected endpoints using `SYSTEM_API_KEY` for administrative access
 - **User Ownership Validation**: All user-specific operations verify ownership via JWT claims
 - **Admin Guard**: Role-based admin access using `ADMIN_USER_IDS` environment variable
-
 ### Real-time Features
 - **WebSocket Support**: `OrdersGateway` for real-time order updates with JWT authentication
 - **Socket.IO Integration**: Bi-directional communication with authenticated clients only
@@ -306,6 +320,25 @@ const socket = io('/ws', {
 - `@UseGuards(JwtAuthGuard)` - Require valid JWT
 - `@UseGuards(SystemKeyGuard)` - Require system API key
 - `@UseGuards(AdminGuard)` - Require admin role (needs JWT first)
+
+## Task Definition Management
+
+The project uses a sophisticated task definition generation system for AWS ECS:
+```bash
+# Generate task definition with specific image
+./scripts/generate-task-definition.sh 442729101249.dkr.ecr.ap-southeast-1.amazonaws.com/omnilaze-backend:latest
+
+# The script automatically:
+# 1. Replaces placeholders (__AWS_REGION__, ACCOUNT_ID, ENVIRONMENT) in template
+# 2. Registers new task definition with AWS ECS
+# 3. Returns ARN for deployment updates
+```
+
+**Template System**: Uses `task-definitions/template.json` with placeholder substitution for:
+- Image URIs from ECR
+- AWS region and account ID
+- Environment-specific configurations
+- SSM Parameter Store ARNs for secrets
 
 
 ## Utility Scripts & Management

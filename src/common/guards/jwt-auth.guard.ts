@@ -11,6 +11,19 @@ export class JwtAuthGuard implements CanActivate {
     const auth = req.headers['authorization'];
     if (!auth || !auth.startsWith('Bearer ')) throw new UnauthorizedException('Missing token');
     const token = auth.slice(7);
+
+    // 开发模式下支持模拟token
+    if (process.env.NODE_ENV === 'development' && token.startsWith('dev_token_')) {
+      const userId = token.replace('dev_token_', '');
+      console.log(`🔧 开发模式：接受模拟token，用户ID: ${userId}`);
+      req.user = { 
+        sub: userId, 
+        phone: '13066905418', // 使用开发模式默认手机号
+        role: 'user' 
+      };
+      return true;
+    }
+
     try {
       const secret = process.env.JWT_SECRET || this.config.jwtSecret || '';
       if (!secret) {

@@ -1,6 +1,6 @@
 import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, ConnectedSocket, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UnauthorizedException, Logger } from '@nestjs/common';
+import { UnauthorizedException, Logger, forwardRef, Inject } from '@nestjs/common';
 import jwt from 'jsonwebtoken';
 import { ConfigService } from '../../config/config.service';
 import { PrismaService } from '../../db/prisma.service';
@@ -96,6 +96,50 @@ export class OrdersGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   broadcastPaymentUpdated(orderId: string, userId: string, payload: any) {
     this.server.to([`order:${orderId}`, `user:${userId}`]).emit('payment.updated', payload);
+  }
+
+  // 新增：订单状态变更事件
+  broadcastOrderStatusChanged(orderId: string, userId: string, payload: {
+    orderId: string;
+    status: string;
+    type: 'eta_set' | 'status_changed' | 'delivered';
+    message?: string;
+    estimatedDeliveryTime?: string;
+    arrivalImageUrl?: string;
+    updatedAt: string;
+  }) {
+    this.server.to([`order:${orderId}`, `user:${userId}`]).emit('order.status.changed', payload);
+    this.logger.log(`Broadcasting order status change for order ${orderId}: ${payload.type}`);
+  }
+
+  // 新增：ETA设置事件
+  broadcastOrderETASet(orderId: string, userId: string, estimatedDeliveryTime: string) {
+    const payload = {
+      orderId,
+      type: 'eta_set' as const,
+      estimatedDeliveryTime,
+      message: `点好了，预计送达时间为${estimatedDeliveryTime}，我在持续跟进送达情况，请保持手机畅通`,
+      updatedAt: new Date().toISOString()
+    };
+    this.server.to([`order:${orderId}`, `user:${userId}`]).emit('order.eta.set', payload);
+    this.logger.log(`Broadcasting ETA set for order ${orderId}: ${estimatedDeliveryTime}`);
+  }
+
+  // 新增：送达事件
+  broadcastOrderDelivered(orderId: string, userId: string, arrivalImageUrl?: string) {
+    const message = arrivalImageUrl 
+      ? "已送达，骑手已提供存放位置图片"
+      : "已送达，骑手未提供存放位置图片，请在周围找找～";
+      
+    const payload = {
+      orderId,
+      type: 'delivered' as const,
+      arrivalImageUrl,
+      message,
+      updatedAt: new Date().toISOString()
+    };
+    this.server.to([`order:${orderId}`, `user:${userId}`]).emit('order.delivered', payload);
+    this.logger.log(`Broadcasting order delivered for order ${orderId}, hasImage: ${!!arrivalImageUrl}`);
   }
 }
 

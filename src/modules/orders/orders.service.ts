@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { PrismaService } from '../../db/prisma.service';
+import { OrdersGateway } from './orders.gateway';
 
 // 统一的订单状态计算函数
 function calculateDisplayStatus(order: any): string {
@@ -13,6 +14,9 @@ function calculateDisplayStatus(order: any): string {
     // 否则显示已支付
     return 'paid';
   }
+  
+  // 支付处理中
+  if (order.paymentStatus === 'pending_payment') return 'pending_payment';
   
   // 未支付（包括 draft, submitted, processing 等所有支付前状态）
   return 'unpaid';
@@ -28,7 +32,11 @@ function enhanceOrderWithDisplayStatus(order: any) {
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => OrdersGateway))
+    private readonly ordersGateway: OrdersGateway
+  ) {}
 
   async createOrder(userId: string, phoneNumber: string, formData: any) {
     if (!userId || !phoneNumber) return { success: false, message: '用户信息不能为空' };
@@ -85,6 +93,48 @@ export class OrdersService {
     return { success: true, message: '反馈提交成功' };
   }
 
+  async getLatestOrder(userId: string) {
+    if (!userId) return { success: false, message: '用户ID不能为空', data: null };
+    
+    const latestOrder = await this.prisma.order.findFirst({
+      where: { userId, isDeleted: false },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        feedbacks: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+    
+    if (!latestOrder) {
+      return { success: true, message: '没有找到订单记录', data: null };
+    }
+    
+    // 增强订单数据，包括显示状态
+    const enhancedOrder = enhanceOrderWithDisplayStatus({
+      ...latestOrder,
+      arrivalImageUrl: latestOrder.arrivalImageUrl,
+      arrivalImageTakenAt: latestOrder.arrivalImageTakenAt,
+      arrivalImageSource: latestOrder.arrivalImageSource,
+      // 从 metadata 中提取 ETA 信息
+      etaEstimatedAt: (latestOrder as any)?.metadata?.eta_estimated_at || null,
+      etaSource: (latestOrder as any)?.metadata?.eta_source || null,
+      // 提取订单数据用于前端恢复表单
+      orderData: {
+        address: latestOrder.deliveryAddress,
+        deliveryTime: latestOrder.deliveryTime,
+        allergies: latestOrder.dietaryRestrictions ? JSON.parse(latestOrder.dietaryRestrictions) : [],
+        preferences: latestOrder.foodPreferences ? JSON.parse(latestOrder.foodPreferences) : [],
+        foodType: latestOrder.metadata?.foodType || [],
+        budget: latestOrder.budgetAmount?.toString() || '',
+        selectedAddressSuggestion: null, // TODO: 如果需要可以从 metadata 中提取
+      }
+    });
+    
+    return { success: true, message: 'OK', data: enhancedOrder };
+  }
+
   async getUserOrders(userId: string) {
     if (!userId) return { success: false, message: '用户ID不能为空' };
     const orders = await this.prisma.order.findMany({
@@ -136,7 +186,7 @@ export class OrdersService {
 
   async adminListOrders(params: { since?: string; status?: string; limit: number }) {
     const where: any = { isDeleted: false };
-    if (params.status) where.status = params.status;
+    if (params.status && params.status !== 'all') where.status = params.status;
     if (params.since) {
       const d = new Date(params.since);
       if (!isNaN(d.getTime())) where.createdAt = { gt: d };
@@ -192,6 +242,15 @@ export class OrdersService {
     const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: { status, updatedAt: new Date() },
+    });
+    
+    // 广播订单状态变更事件
+    this.ordersGateway.broadcastOrderStatusChanged(orderId, updated.userId, {
+      orderId,
+      status,
+      type: 'status_changed',
+      message: `订单状态已更新为: ${status}`,
+      updatedAt: updated.updatedAt.toISOString()
     });
     
     // 返回包含displayStatus的数据
@@ -387,5 +446,97 @@ export class OrdersService {
         created_at: voiceFeedback.createdAt,
       },
     };
+  }
+
+  // Admin method: Set order to selecting status
+  async adminSetOrderSelecting(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) return { success: false, message: '订单不存在' };
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'processing', updatedAt: new Date() },
+    });
+
+    // 广播订单状态变更事件
+    this.ordersGateway.broadcastOrderStatusChanged(orderId, updated.userId, {
+      orderId,
+      status: 'processing',
+      type: 'status_changed',
+      message: '正在挑选...',
+      updatedAt: updated.updatedAt.toISOString()
+    });
+
+    return { success: true, message: '订单状态已设置为挑选中' };
+  }
+
+  // Admin method: Set order ETA
+  async adminSetOrderETA(orderId: string, estimatedDeliveryTime: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) return { success: false, message: '订单不存在' };
+
+    // 使用metadata存储ETA信息，与现有updateOrderEta方法保持一致
+    const nextMeta = { ...(order as any).metadata };
+    nextMeta.eta_display = estimatedDeliveryTime; // 显示格式，如 "18:30-19:00"
+    nextMeta.eta_estimated_at = new Date().toISOString(); // 设置时间
+    nextMeta.eta_source = 'admin';
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { 
+        metadata: nextMeta,
+        status: 'delivering', // 设置ETA时自动更改状态为delivering
+        updatedAt: new Date() 
+      },
+    });
+
+    // 广播ETA设置事件
+    this.ordersGateway.broadcastOrderETASet(orderId, updated.userId, estimatedDeliveryTime);
+
+    // 广播订单状态变更事件
+    this.ordersGateway.broadcastOrderStatusChanged(orderId, updated.userId, {
+      orderId,
+      status: 'delivering',
+      type: 'eta_set',
+      message: `点好了，预计送达时间为${estimatedDeliveryTime}，我在持续跟进送达情况，请保持手机畅通`,
+      estimatedDeliveryTime,
+      updatedAt: updated.updatedAt.toISOString()
+    });
+
+    return { success: true, message: 'ETA已设置' };
+  }
+
+  // Admin method: Set order as delivered
+  async adminSetOrderDelivered(orderId: string, arrivalImageUrl: string, takenAt?: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) return { success: false, message: '订单不存在' };
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { 
+        status: 'completed',
+        arrivalImageUrl,
+        arrivalImageTakenAt: takenAt ? new Date(takenAt) : new Date(),
+        arrivalImageSource: 'admin_upload',
+        updatedAt: new Date() 
+      },
+    });
+
+    // 广播送达事件
+    this.ordersGateway.broadcastOrderDelivered(orderId, updated.userId, arrivalImageUrl);
+
+    // 广播订单状态变更事件
+    this.ordersGateway.broadcastOrderStatusChanged(orderId, updated.userId, {
+      orderId,
+      status: 'completed',
+      type: 'delivered',
+      message: arrivalImageUrl 
+        ? "已送达，骑手已提供存放位置图片"
+        : "已送达，骑手未提供存放位置图片，请在周围找找～",
+      arrivalImageUrl,
+      updatedAt: updated.updatedAt.toISOString()
+    });
+
+    return { success: true, message: '订单已标记为送达' };
   }
 }

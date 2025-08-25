@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { OrdersGateway } from './orders.gateway';
@@ -12,7 +12,7 @@ import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.g
   imports: [ConfigModule],
   controllers: [OrdersController],
   providers: [OrdersService, OrdersGateway, JwtAuthGuard, SystemKeyGuard, AdminGuard, AdminOrSystemKeyGuard],
-  exports: [OrdersService],
+  exports: [OrdersService, OrdersGateway],
 })
 export class OrdersModule {}
 

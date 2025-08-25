@@ -50,6 +50,15 @@ export class PaymentsService {
       },
     });
 
+    // 🔄 新增：创建支付时更新订单状态为pending_payment
+    await this.prisma.order.update({
+      where: { id: order.id },
+      data: { 
+        paymentStatus: 'pending_payment',
+        updatedAt: new Date()
+      }
+    });
+
     try {
       let paymentResult: any;
       

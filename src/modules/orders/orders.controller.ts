@@ -65,6 +65,18 @@ export class OrdersController {
     return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message };
   }
 
+  @Get('/orders/latest')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get latest user order', description: 'Get the most recent order for the current user' })
+  @ApiResponse({ status: 200, description: 'Latest order retrieved successfully' })
+  async getLatest(
+    @CurrentUserId() userId: string
+  ) {
+    const res = await this.orders.getLatestOrder(userId);
+    return { success: res.success, code: res.success ? 'OK' : 'ERROR', data: res.data, message: res.message };
+  }
+
   @Get('/orders/:userId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -295,5 +307,60 @@ export class OrdersController {
   ) {
     const res = await this.orders.getUserOrderEta(orderId, userId);
     return { success: res.success, code: res.success ? 'OK' : 'ERROR', data: res.data, message: res.message };
+  }
+
+  // Missing Nexus admin endpoints
+  @Post('/admin/orders/:orderId/set-selecting')
+  @UseGuards(AdminOrSystemKeyGuard)
+  @ApiOperation({ summary: 'Admin set order selecting', description: 'Set order status to selecting (admin only)' })
+  @ApiParam({ name: 'orderId', description: 'Order ID' })
+  async adminSetSelecting(@Param('orderId') orderId: string) {
+    const res = await this.orders.adminSetOrderSelecting(orderId);
+    return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message };
+  }
+
+  @Post('/admin/orders/:orderId/set-eta')
+  @UseGuards(AdminOrSystemKeyGuard)
+  @ApiOperation({ summary: 'Admin set order ETA', description: 'Set estimated delivery time for an order (admin only)' })
+  @ApiParam({ name: 'orderId', description: 'Order ID' })
+  @ApiBody({ schema: { 
+    type: 'object', 
+    properties: { 
+      estimated_delivery_time: { type: 'string', example: '18:30-19:00' } 
+    },
+    required: ['estimated_delivery_time']
+  }})
+  async adminSetETA(
+    @Param('orderId') orderId: string,
+    @Body() body: { estimated_delivery_time: string }
+  ) {
+    if (!body.estimated_delivery_time) {
+      return { success: false, code: 'INVALID', message: '预计送达时间不能为空' };
+    }
+    const res = await this.orders.adminSetOrderETA(orderId, body.estimated_delivery_time);
+    return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message };
+  }
+
+  @Post('/admin/orders/:orderId/set-delivered')
+  @UseGuards(AdminOrSystemKeyGuard)
+  @ApiOperation({ summary: 'Admin set order delivered', description: 'Mark order as delivered with optional arrival image (admin only)' })
+  @ApiParam({ name: 'orderId', description: 'Order ID' })
+  @ApiBody({ schema: { 
+    type: 'object', 
+    properties: { 
+      arrival_image_url: { type: 'string' },
+      taken_at: { type: 'string', format: 'date-time' }
+    },
+    required: ['arrival_image_url']
+  }})
+  async adminSetDelivered(
+    @Param('orderId') orderId: string,
+    @Body() body: { arrival_image_url: string; taken_at?: string }
+  ) {
+    if (!body.arrival_image_url) {
+      return { success: false, code: 'INVALID', message: '到达图片URL不能为空' };
+    }
+    const res = await this.orders.adminSetOrderDelivered(orderId, body.arrival_image_url, body.taken_at);
+    return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message };
   }
 }

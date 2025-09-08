@@ -246,6 +246,8 @@ let AuthService = class AuthService {
         if (!/^\d{4,8}$/.test(verificationCode))
             return { success: false, message: '请输入有效的验证码' };
         console.log(`[SMS] 开始验证手机号 ${phoneNumber} 的验证码`);
+        // 判断是否为测试用户
+        const isTestUser = verificationCode === '100000' || phoneNumber.startsWith('199');
         // 验证码校验 - 统一从内存存储中验证（支持SPUG、阿里云、开发模式）
         // 同时保留通用测试码"100000"直通入口
         if (verificationCode === '100000') {
@@ -283,8 +285,21 @@ let AuthService = class AuthService {
             return {
                 success: true,
                 message: '新用户验证成功，请输入邀请码',
-                data: { user_id: null, phone_number: phoneNumber, is_new_user: true },
+                data: {
+                    user_id: null,
+                    phone_number: phoneNumber,
+                    is_new_user: true,
+                    is_test_user: isTestUser // 标记是否为测试用户
+                },
             };
+        }
+        // 如果用户存在但未标记为测试用户，现在使用测试验证码登录，则更新为测试用户
+        if (isTestUser && !user.isTestUser) {
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: { isTestUser: true }
+            });
+            console.log(`[Auth] 用户 ${phoneNumber} 已更新为测试用户`);
         }
         return {
             success: true,
@@ -294,10 +309,11 @@ let AuthService = class AuthService {
                 phone_number: user.phoneNumber,
                 is_new_user: false,
                 user_sequence: user.userSequence || undefined,
+                is_test_user: user.isTestUser || isTestUser // 返回测试用户标识
             },
         };
     }
-    async verifyInviteAndCreate(phoneNumber, inviteCode) {
+    async verifyInviteAndCreate(phoneNumber, inviteCode, isTestUser = false) {
         if (!/^\d{11}$/.test(phoneNumber))
             return { success: false, message: '请输入正确的11位手机号码' };
         if (!inviteCode)
@@ -305,12 +321,15 @@ let AuthService = class AuthService {
         const code = await this.prisma.inviteCode.findUnique({ where: { code: inviteCode } });
         if (!code || code.currentUses >= code.maxUses)
             return { success: false, message: '邀请码无效或已达到使用次数限制' };
+        // 判断是否为测试用户（199开头的手机号也是测试用户）
+        const isTest = isTestUser || phoneNumber.startsWith('199');
         // create user
         const user = await this.prisma.user.create({
             data: {
                 phoneNumber,
                 inviteCode,
                 userInviteCode: `USR${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+                isTestUser: isTest, // 设置测试用户标识
             },
         });
         // update invite code usage
@@ -318,6 +337,9 @@ let AuthService = class AuthService {
             where: { code: inviteCode },
             data: { currentUses: { increment: 1 }, usedBy: phoneNumber, usedAt: new Date() },
         });
+        if (isTest) {
+            console.log(`[Auth] 创建测试用户: ${phoneNumber}`);
+        }
         return {
             success: true,
             message: '新用户注册成功',
@@ -326,6 +348,7 @@ let AuthService = class AuthService {
                 phone_number: user.phoneNumber,
                 user_sequence: user.userSequence || undefined,
                 user_invite_code: user.userInviteCode || undefined,
+                is_test_user: user.isTestUser, // 返回测试用户标识
             },
         };
     }

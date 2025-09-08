@@ -24,7 +24,7 @@ exports.OrdersModule = OrdersModule = __decorate([
         imports: [config_module_1.ConfigModule],
         controllers: [orders_controller_1.OrdersController],
         providers: [orders_service_1.OrdersService, orders_gateway_1.OrdersGateway, jwt_auth_guard_1.JwtAuthGuard, system_key_guard_1.SystemKeyGuard, admin_guard_1.AdminGuard, admin_or_system_key_guard_1.AdminOrSystemKeyGuard],
-        exports: [orders_service_1.OrdersService],
+        exports: [orders_service_1.OrdersService, orders_gateway_1.OrdersGateway],
     })
 ], OrdersModule);
 //# sourceMappingURL=orders.module.js.map

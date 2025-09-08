@@ -34,6 +34,7 @@ export declare class AuthService {
             user_id: any;
             phone_number: string;
             is_new_user: boolean;
+            is_test_user: boolean;
             user_sequence?: undefined;
         };
     } | {
@@ -44,9 +45,10 @@ export declare class AuthService {
             phone_number: string;
             is_new_user: boolean;
             user_sequence: number;
+            is_test_user: boolean;
         };
     }>;
-    verifyInviteAndCreate(phoneNumber: string, inviteCode: string): Promise<{
+    verifyInviteAndCreate(phoneNumber: string, inviteCode: string, isTestUser?: boolean): Promise<{
         success: boolean;
         message: string;
         data?: undefined;
@@ -58,6 +60,7 @@ export declare class AuthService {
             phone_number: string;
             user_sequence: number;
             user_invite_code: string;
+            is_test_user: boolean;
         };
     }>;
 }

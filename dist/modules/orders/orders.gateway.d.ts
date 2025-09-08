@@ -31,4 +31,15 @@ export declare class OrdersGateway implements OnGatewayConnection, OnGatewayDisc
     }>;
     broadcastOrderUpdated(orderId: string, userId: string, payload: any): void;
     broadcastPaymentUpdated(orderId: string, userId: string, payload: any): void;
+    broadcastOrderStatusChanged(orderId: string, userId: string, payload: {
+        orderId: string;
+        status: string;
+        type: 'eta_set' | 'status_changed' | 'delivered';
+        message?: string;
+        estimatedDeliveryTime?: string;
+        arrivalImageUrl?: string;
+        updatedAt: string;
+    }): void;
+    broadcastOrderETASet(orderId: string, userId: string, estimatedDeliveryTime: string): void;
+    broadcastOrderDelivered(orderId: string, userId: string, arrivalImageUrl?: string): void;
 }

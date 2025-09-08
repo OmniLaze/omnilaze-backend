@@ -41,6 +41,10 @@ let OrdersController = class OrdersController {
         const res = await this.orders.updateOrderFeedback(body.order_id, userId, body.rating, body.feedback);
         return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message };
     }
+    async getLatest(userId) {
+        const res = await this.orders.getLatestOrder(userId);
+        return { success: res.success, code: res.success ? 'OK' : 'ERROR', data: res.data, message: res.message };
+    }
     async list(currentUserId, userId) {
         // Users can only view their own orders
         if (currentUserId !== userId) {
@@ -127,6 +131,25 @@ let OrdersController = class OrdersController {
         const res = await this.orders.getUserOrderEta(orderId, userId);
         return { success: res.success, code: res.success ? 'OK' : 'ERROR', data: res.data, message: res.message };
     }
+    // Missing Nexus admin endpoints
+    async adminSetSelecting(orderId) {
+        const res = await this.orders.adminSetOrderSelecting(orderId);
+        return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message };
+    }
+    async adminSetETA(orderId, body) {
+        if (!body.estimated_delivery_time) {
+            return { success: false, code: 'INVALID', message: '预计送达时间不能为空' };
+        }
+        const res = await this.orders.adminSetOrderETA(orderId, body.estimated_delivery_time);
+        return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message };
+    }
+    async adminSetDelivered(orderId, body) {
+        if (!body.arrival_image_url) {
+            return { success: false, code: 'INVALID', message: '到达图片URL不能为空' };
+        }
+        const res = await this.orders.adminSetOrderDelivered(orderId, body.arrival_image_url, body.taken_at);
+        return { success: res.success, code: res.success ? 'OK' : 'ERROR', message: res.message };
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -174,6 +197,17 @@ __decorate([
     __metadata("design:paramtypes", [String, orders_dto_1.OrderFeedbackDto]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "feedback", null);
+__decorate([
+    (0, common_1.Get)('/orders/latest'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Get latest user order', description: 'Get the most recent order for the current user' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Latest order retrieved successfully' }),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getLatest", null);
 __decorate([
     (0, common_1.Get)('/orders/:userId'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
@@ -364,6 +398,53 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getEta", null);
+__decorate([
+    (0, common_1.Post)('/admin/orders/:orderId/set-selecting'),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
+    (0, swagger_1.ApiOperation)({ summary: 'Admin set order selecting', description: 'Set order status to selecting (admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'orderId', description: 'Order ID' }),
+    __param(0, (0, common_1.Param)('orderId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "adminSetSelecting", null);
+__decorate([
+    (0, common_1.Post)('/admin/orders/:orderId/set-eta'),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
+    (0, swagger_1.ApiOperation)({ summary: 'Admin set order ETA', description: 'Set estimated delivery time for an order (admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'orderId', description: 'Order ID' }),
+    (0, swagger_1.ApiBody)({ schema: {
+            type: 'object',
+            properties: {
+                estimated_delivery_time: { type: 'string', example: '18:30-19:00' }
+            },
+            required: ['estimated_delivery_time']
+        } }),
+    __param(0, (0, common_1.Param)('orderId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "adminSetETA", null);
+__decorate([
+    (0, common_1.Post)('/admin/orders/:orderId/set-delivered'),
+    (0, common_1.UseGuards)(admin_or_system_key_guard_1.AdminOrSystemKeyGuard),
+    (0, swagger_1.ApiOperation)({ summary: 'Admin set order delivered', description: 'Mark order as delivered with optional arrival image (admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'orderId', description: 'Order ID' }),
+    (0, swagger_1.ApiBody)({ schema: {
+            type: 'object',
+            properties: {
+                arrival_image_url: { type: 'string' },
+                taken_at: { type: 'string', format: 'date-time' }
+            },
+            required: ['arrival_image_url']
+        } }),
+    __param(0, (0, common_1.Param)('orderId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "adminSetDelivered", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, swagger_1.ApiTags)('Orders'),
     (0, common_1.Controller)('/v1'),

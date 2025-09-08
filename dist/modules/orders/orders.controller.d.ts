@@ -10,6 +10,7 @@ export declare class OrdersController {
         data: {
             order_id: string;
             order_number: string;
+            is_test_order: boolean;
         };
     }>;
     submit(userId: string, body: SubmitOrderDto): Promise<{
@@ -23,6 +24,12 @@ export declare class OrdersController {
     feedback(userId: string, body: OrderFeedbackDto): Promise<{
         success: boolean;
         code: string;
+        message: string;
+    }>;
+    getLatest(userId: string): Promise<{
+        success: boolean;
+        code: string;
+        data: any;
         message: string;
     }>;
     list(currentUserId: string, userId: string): Promise<{
@@ -174,6 +181,26 @@ export declare class OrdersController {
             eta_estimated_at: any;
             eta_source: any;
         };
+        message: string;
+    }>;
+    adminSetSelecting(orderId: string): Promise<{
+        success: boolean;
+        code: string;
+        message: string;
+    }>;
+    adminSetETA(orderId: string, body: {
+        estimated_delivery_time: string;
+    }): Promise<{
+        success: boolean;
+        code: string;
+        message: string;
+    }>;
+    adminSetDelivered(orderId: string, body: {
+        arrival_image_url: string;
+        taken_at?: string;
+    }): Promise<{
+        success: boolean;
+        code: string;
         message: string;
     }>;
 }

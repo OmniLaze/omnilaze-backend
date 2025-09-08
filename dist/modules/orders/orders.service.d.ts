@@ -1,7 +1,9 @@
 import { PrismaService } from '../../db/prisma.service';
+import { OrdersGateway } from './orders.gateway';
 export declare class OrdersService {
     private readonly prisma;
-    constructor(prisma: PrismaService);
+    private readonly ordersGateway;
+    constructor(prisma: PrismaService, ordersGateway: OrdersGateway);
     createOrder(userId: string, phoneNumber: string, formData: any): Promise<{
         success: boolean;
         message: string;
@@ -12,6 +14,7 @@ export declare class OrdersService {
         data: {
             order_id: string;
             order_number: string;
+            is_test_order: boolean;
         };
     }>;
     submitOrder(orderId: string, userId: string): Promise<{
@@ -28,6 +31,11 @@ export declare class OrdersService {
     updateOrderFeedback(orderId: string, userId: string, rating: number, feedback?: string): Promise<{
         success: boolean;
         message: string;
+    }>;
+    getLatestOrder(userId: string): Promise<{
+        success: boolean;
+        message: string;
+        data: any;
     }>;
     getUserOrders(userId: string): Promise<{
         success: boolean;
@@ -166,5 +174,17 @@ export declare class OrdersService {
             duration_sec: number;
             created_at: Date;
         };
+    }>;
+    adminSetOrderSelecting(orderId: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    adminSetOrderETA(orderId: string, estimatedDeliveryTime: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    adminSetOrderDelivered(orderId: string, arrivalImageUrl: string, takenAt?: string): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }

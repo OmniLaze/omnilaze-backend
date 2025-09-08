@@ -11,15 +11,17 @@ import { AdminAwsController } from './admin.aws.controller';
 import { AdminAwsService } from './admin.aws.service';
 import { AdminPaymentsController } from './admin.payments.controller';
 import { AdminInviteCodesController } from './admin.invite-codes.controller';
+import { AdminOrdersController } from './admin.orders.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { OrdersModule } from '../orders/orders.module';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import { SystemKeyGuard } from '../../common/guards/system-key.guard';
 import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.guard';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, PaymentsModule, NotificationsModule],
+  imports: [ConfigModule, PrismaModule, PaymentsModule, NotificationsModule, OrdersModule],
   controllers: [
     AdminController,
     AdminAuthController,
@@ -28,6 +30,7 @@ import { AdminOrSystemKeyGuard } from '../../common/guards/admin-or-system-key.g
     AdminAwsController,
     AdminPaymentsController,
     AdminInviteCodesController,
+    AdminOrdersController,
   ],
   providers: [
     AdminUsersService,

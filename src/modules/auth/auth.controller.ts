@@ -58,7 +58,9 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid invite code or phone number' })
   @ApiResponse({ status: 500, description: 'JWT secret not configured' })
   async verifyInvite(@Body() body: VerifyInviteCodeDto) {
-    const res = await this.authService.verifyInviteAndCreate(body.phone_number, body.invite_code);
+    // 判断是否为测试用户（基于isTestUser字段或手机号前缀）
+    const isTestUser = (body as any).is_test_user || body.phone_number.startsWith('199');
+    const res = await this.authService.verifyInviteAndCreate(body.phone_number, body.invite_code, isTestUser);
     if (!res.success) return { success: false, code: 'ERROR', message: res.message };
     const data: any = res.data || {};
     if (data.user_id) {
